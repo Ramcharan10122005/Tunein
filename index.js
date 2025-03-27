@@ -27,14 +27,16 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 let users = [
-    { email: "kundenaramcharan@gmail.com", username: "Ramcharan", password: "hashedPassword" }
+    { email: "202311047@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" },
+    { email: "kundenaramcharan@gmail.com", username: "Ramcharan", password: "hashedPassword" },
+    { email: "202311063@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" }
 ];
 
 let otpStore = {};
 
 // Home Route
 app.get("/", (req, res) => {
-    res.send("hello");
+    res.render('dashboard', { username: 'lerii' });
 });
 
 // Authentication Routes
@@ -50,10 +52,13 @@ app.get("/reset", (req, res) => {
 
 // Password Reset
 app.post("/reset", (req, res) => {
-    const email = req.body.email;
+    const email = req.body.email.trim();
+    console.log("Entered Email:", email);
     const user = users.find(user => user.email === email);
+    console.log(user);
     if (user) {
         req.session.resetEmail = email; // Store email in session
+        console.log(req.session);
         res.redirect("/verify-2fa");
     } else {
         res.send("Invalid email.");
@@ -105,13 +110,16 @@ app.post("/verify-2fa", (req, res) => {
     if (otpStore[email] == userOtp) {
         delete otpStore[email]; // Clear OTP
         req.session.authenticated = true;
-        return res.redirect("/dashboard");
+        return res.redirect("/new");
     }
 
     res.send("Invalid OTP, try again.");
 });
 
 // Dashboard (Authenticated Route)
+app.get("/new",(req,res)=>{
+    res.render("new");
+})
 app.get("/dashboard", (req, res) => {
     if (!req.session.authenticated) {
         return res.redirect("/login");
