@@ -67,7 +67,11 @@ app.get("/signup", (req, res) => {
     });
 });
 app.get("/reset", (req, res) => {
-    res.render("reset");
+    res.render("reset",{ 
+        error: false, 
+        errorType: "user-exists" || "",
+        errorMessage: "Invalid Password",
+    });
 });
 app.post("/signup",async(req,res)=>{
     try {
@@ -128,20 +132,48 @@ app.post("/login",async(req,res)=>{
     }
 })
 // Password Reset
-app.post("/reset", (req, res) => {
+app.post("/reset", async(req, res) => {
     const email = req.body.email.trim();
     console.log("Entered Email:", email);
-    const user = users.find(user => user.email === email);
+    const user = await db.query("SELECT * FROM users WHERE email = $1", [email]);
     console.log(user);
-    if (user) {
-        req.session.resetEmail = email; // Store email in session
+    if (user.rows.length != 0) {
+        req.session.resetEmail = email; 
         console.log(req.session);
         res.redirect("/verify-2fa");
     } else {
-        res.send("Invalid email.");
+        return res.render("reset", { 
+            error: true, 
+            errorType: "user-exists" || "",
+            errorMessage: "Invalid Email",
+        });
     }
 });
-
+app.post("/new",async(req,res)=>{
+    try{
+        const { password, confirm_password } = req.body;
+        const email = req.session.resetEmail;
+        if (password !== confirm_password) {
+            return res.render("new", { 
+                error: true, 
+                errorType: "user-exists" || "",
+                errorMessage: "Passwords do not match",
+            })
+        }
+        const hashedPassword = await bcrypt.hash(password, saltrounds);
+        const user = await db.query("update users SET password = $1 WHERE email = $2", [hashedPassword, email]);
+        req.session.resetEmail = null;
+        res.redirect("/login");
+    }
+    catch(err){
+        console.error(error);
+        res.status(500).render("reset", { 
+            error: true, 
+            errorType: "server-error",
+            errorMessage: "An error occurred. Please try again.",
+        });
+    }
+})
 // OTP Verification Page
 app.get("/verify-2fa", (req, res) => {
     if (!req.session.resetEmail) {
@@ -195,7 +227,15 @@ app.post("/verify-2fa", (req, res) => {
 
 // Dashboard (Authenticated Route)
 app.get("/new",(req,res)=>{
-    res.render("new");
+    if(req.session.authenticated)
+    res.render("new",{ 
+        error: false, 
+        errorType: "user-exists" || "",
+        errorMessage: "Passwords do not match",
+    });
+    else{
+        res.redirect("/reset");
+    }
 })
 app.get("/dashboard", (req, res) => {
     if (!req.session.authenticated) {
