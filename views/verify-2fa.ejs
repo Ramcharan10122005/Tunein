@@ -1,13 +1,33 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify 2FA</title>
+    <link rel="stylesheet" href="styles.css"> <!-- Linking external CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        .logo-text {
+            font-family: 'Pacifico', cursive;
+            font-size: 36px; /* Adjust size */
+            font-weight: normal;
+            text-align: center;
+            color: white; /* Adjust color as needed */
+        }
+    </style>
 </head>
 <body>
-    <h2>Enter the OTP sent to your email</h2>
-    <form action="/verify-2fa" method="POST">
-        <input type="text" name="otp" placeholder="Enter OTP" required>
-        <button type="submit">Verify</button>
-    </form>
+    <div class="auth-container">
+        <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo">
+        <h2 class="logo-text">TuneIn</h2>
+        <h2>Enter the OTP sent to your email</h2>
+        <form action="/verify-2fa" method="POST">
+            <div class="input-container">
+                <input type="text" id="otp" name="otp" placeholder=" " required>
+                <label for="otp">OTP</label>
+            </div>
+            <button type="submit">Verify</button>
+        </form>
+    </div>
 </body>
 </html>

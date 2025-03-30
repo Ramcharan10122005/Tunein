@@ -1,5 +1,6 @@
 import express from "express";
 import path from "path";
+import pg from "pg";
 import { fileURLToPath } from "url";
 import bodyParser from "body-parser";
 import bcrypt from "bcrypt";
@@ -13,7 +14,7 @@ import nodemailer from "nodemailer";
 
 const app = express();
 const port = 3000;
-
+const saltrounds=10;
 env.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,39 +28,152 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 let users = [
-    { email: "kundenaramcharan@gmail.com", username: "Ramcharan", password: "hashedPassword" }
+    { email: "202311047@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" },
+    { email: "kundenaramcharan@gmail.com", username: "Ramcharan", password: "hashedPassword" },
+    { email: "202311063@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" }
 ];
 
 let otpStore = {};
-
+const db=new pg.Client({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database:process.env.DB_DATABASE,
+    password: process.env.DB_PASSWORD,
+    port:process.env.DB_PORT,
+})
+db.connect()
+    .then(() => console.log("✅ Connected to PostgreSQL"))
+    .catch(err => console.error("❌ Database connection error:", err));
 // Home Route
 app.get("/", (req, res) => {
-    res.send("hello");
+    res.render('dashboard');
 });
-
+app.get("/home",(req,res)=>{
+    res.redirect("/");
+})
 // Authentication Routes
 app.get("/login", (req, res) => {
-    res.render("login");
+    res.render("login",{
+        error: false, 
+        errorType: "user-exists" || "",
+        errorMessage: "User with this username or email already exists",
+    });
 });
 app.get("/signup", (req, res) => {
-    res.render("signup");
+    res.render("signup",{
+        error: false, 
+        errorType: "user-exists" || "",
+        errorMessage: "User with this username or email already exists",
+    });
 });
 app.get("/reset", (req, res) => {
-    res.render("reset");
+    res.render("reset",{ 
+        error: false, 
+        errorType: "user-exists" || "",
+        errorMessage: "Invalid Password",
+    });
 });
+app.post("/signup",async(req,res)=>{
+    try {
+        const { username, email, password } = req.body;
 
+        const user = await db.query("SELECT * FROM users WHERE username = $1 OR email = $2", [username, email]);
+        if (user.rows.length > 0) {
+            return res.render("signup", { 
+                error: true, 
+                errorType: "user-exists" || "",
+                errorMessage: "User with this username or email already exists",
+            });
+        }
+
+        // Hash the password before saving
+        const hashedPassword = await bcrypt.hash(password, saltrounds);
+
+        // Insert new user into the database
+        const result = await db.query(
+            "INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *",
+            [username, email, hashedPassword]
+        );
+        req.session.authenticated = true;
+        req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
+        res.redirect("/"); 
+        console.log(result.rows[0] );
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+})
+app.post("/login",async(req,res)=>{
+    try{
+        const { username, password } = req.body;
+        const user = await db.query("SELECT * FROM users WHERE username = $1", [username]);
+        if (user.rows.length === 0) {
+            return res.render("login", { 
+                error: true, 
+                errorType: "user-exists" || "",
+                errorMessage: "Invalid username",
+            });
+        }
+        const isValidPassword = await bcrypt.compare(password, user.rows[0].password);
+        if (!isValidPassword) {
+            return res.render("login", { 
+                error: true, 
+                errorType: "user-exists" || "",
+                errorMessage: "Invalid Password",
+            });
+        }
+        req.session.authenticated = true;
+        req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
+        res.redirect("/"); 
+    }
+    catch(err){
+        console.error(err);
+        res.status(500).json({ message: "Internal Server Error" });
+    }
+})
 // Password Reset
-app.post("/reset", (req, res) => {
-    const email = req.body.email;
-    const user = users.find(user => user.email === email);
-    if (user) {
-        req.session.resetEmail = email; // Store email in session
+app.post("/reset", async(req, res) => {
+    const email = req.body.email.trim();
+    console.log("Entered Email:", email);
+    const user = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    console.log(user);
+    if (user.rows.length != 0) {
+        req.session.resetEmail = email; 
+        console.log(req.session);
         res.redirect("/verify-2fa");
     } else {
-        res.send("Invalid email.");
+        return res.render("reset", { 
+            error: true, 
+            errorType: "user-exists" || "",
+            errorMessage: "Invalid Email",
+        });
     }
 });
-
+app.post("/new",async(req,res)=>{
+    try{
+        const { password, confirm_password } = req.body;
+        const email = req.session.resetEmail;
+        if (password !== confirm_password) {
+            return res.render("new", { 
+                error: true, 
+                errorType: "user-exists" || "",
+                errorMessage: "Passwords do not match",
+            })
+        }
+        const hashedPassword = await bcrypt.hash(password, saltrounds);
+        const user = await db.query("update users SET password = $1 WHERE email = $2", [hashedPassword, email]);
+        req.session.resetEmail = null;
+        res.redirect("/login");
+    }
+    catch(err){
+        console.error(error);
+        res.status(500).render("reset", { 
+            error: true, 
+            errorType: "server-error",
+            errorMessage: "An error occurred. Please try again.",
+        });
+    }
+})
 // OTP Verification Page
 app.get("/verify-2fa", (req, res) => {
     if (!req.session.resetEmail) {
@@ -105,13 +219,24 @@ app.post("/verify-2fa", (req, res) => {
     if (otpStore[email] == userOtp) {
         delete otpStore[email]; // Clear OTP
         req.session.authenticated = true;
-        return res.redirect("/dashboard");
+        return res.redirect("/new");
     }
 
     res.send("Invalid OTP, try again.");
 });
 
 // Dashboard (Authenticated Route)
+app.get("/new",(req,res)=>{
+    if(req.session.authenticated)
+    res.render("new",{ 
+        error: false, 
+        errorType: "user-exists" || "",
+        errorMessage: "Passwords do not match",
+    });
+    else{
+        res.redirect("/reset");
+    }
+})
 app.get("/dashboard", (req, res) => {
     if (!req.session.authenticated) {
         return res.redirect("/login");
