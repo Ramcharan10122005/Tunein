@@ -481,7 +481,7 @@
 
     <div class="sidebar">
         <ul>
-            <li>
+            <li onclick="redirectTo('home')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="lucide lucide-house">
@@ -489,7 +489,7 @@
                     <path
                         d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
                 </svg> Home
-            </li>
+            </li onclick="redirectTo('liked-songs')">
             <li>
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -498,7 +498,7 @@
                         d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
                 </svg> Liked Songs
             </li>
-            <li>
+            <li onclick="redirectTo('playlists')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="lucide lucide-list-music">
@@ -509,7 +509,7 @@
                     <path d="M12 18H3" />
                 </svg> Playlists
             </li>
-            <li>
+            <li onclick="redirectTo('Mood-based')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="lucide lucide-smile-plus">
@@ -521,7 +521,7 @@
                     <path d="M19 2v6" />
                 </svg> Mood-based
             </li>
-            <li>
+            <li onclick="redirectTo('premium')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="lucide lucide-crown">
@@ -530,7 +530,7 @@
                     <path d="M5 21h14" />
                 </svg> Premium
             </li>
-            <li>
+            <li onclick="redirectTo('profile')">
                 <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
                     stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                     class="lucide lucide-user-pen">
@@ -725,6 +725,12 @@
 
             lucide.createIcons();
         });
+        function redirectTo(pageName) {
+            // For demo purposes just log the navigation
+            // console.log(`Navigating to: ${pageName}`);
+            // In production this would be:
+            window.location.href = `/${pageName}`;
+        }
     </script>
 </body>
 
