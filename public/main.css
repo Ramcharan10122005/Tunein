@@ -156,7 +156,34 @@ header {
     outline: none;
     transition: background 0.3s ease;
 }
-
+.username-container{
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: 64px;
+    height: 28px;
+    padding: 12px 12px;
+    padding-top: 0;
+    padding-bottom: 0;
+    margin-right: 150px;
+    color: white;
+    font-weight: bold;
+    font-size: 10px;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    font-size: 20px;
+}
+.usernam-greet {
+    color: white;
+    font-weight: bold;
+}
+.username-name {
+    color: red;
+    font-family: 'Pacifico', cursive;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
 .sign-in-box:hover {
     background-color: #9e1c1c;
 }

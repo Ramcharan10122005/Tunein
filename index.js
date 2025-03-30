@@ -46,7 +46,9 @@ db.connect()
     .catch(err => console.error("❌ Database connection error:", err));
 // Home Route
 app.get("/", (req, res) => {
-    res.render('dashboard');
+    res.render('dashboard',{
+        user:req.session.username,
+    });
 });
 app.get("/home",(req,res)=>{
     res.redirect("/");
@@ -95,6 +97,7 @@ app.post("/signup",async(req,res)=>{
             [username, email, hashedPassword]
         );
         req.session.authenticated = true;
+        req.session.username=username;
         //req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
         res.redirect("/"); 
         console.log(result.rows[0] );
@@ -123,6 +126,7 @@ app.post("/login",async(req,res)=>{
             });
         }
         req.session.authenticated = true;
+        req.session.username=username;
        // req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
         res.redirect("/"); 
     }
