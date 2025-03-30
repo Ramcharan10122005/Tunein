@@ -95,7 +95,7 @@ app.post("/signup",async(req,res)=>{
             [username, email, hashedPassword]
         );
         req.session.authenticated = true;
-        req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
+        //req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
         res.redirect("/"); 
         console.log(result.rows[0] );
     } catch (err) {
@@ -123,7 +123,7 @@ app.post("/login",async(req,res)=>{
             });
         }
         req.session.authenticated = true;
-        req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
+       // req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
         res.redirect("/"); 
     }
     catch(err){
@@ -242,6 +242,38 @@ app.get("/dashboard", (req, res) => {
         return res.redirect("/login");
     }
     res.send("Welcome to your dashboard!");
+});
+
+// liked songs (Authenticated Route)
+app.use((req, res, next) => {
+    req.user = { userId: 5, username: "ijk" }; // Hardcoded test user
+    next();
+});
+
+app.get("/liked-songs", (req, res) => {
+    const loggedInUser = req.user; // Get the "logged-in" user (hardcoded)
+
+    if (!loggedInUser) {
+        return res.redirect("/login");
+    }
+
+    const likedSongs = [
+        { userId: 5, username: "ijk", songName: "Industry Baby", artist: "Lil Nas X & Jack Harlow" },
+        { userId: 5, username: "ijk", songName: "Good 4 U", artist: "Olivia Rodrigo" },
+        { userId: 5, username: "ijk", songName: "Starboy", artist: "The Weeknd" },
+        { userId: 5, username: "ijk", songName: "Sunflower", artist: "Post Malone & Swae Lee" },
+        { userId: 5, username: "ijk", songName: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars" },
+        { userId: 7, username: "xyz", songName: "Blinding Lights", artist: "The Weeknd" }
+    ];
+
+    // Filter liked songs for the "logged-in" user
+    const userLikedSongs = likedSongs.filter(song => song.username === loggedInUser.username);
+
+    res.render("liked.ejs", { 
+        likedSongs, 
+        loggedInUserId: loggedInUser.userId // Pass userId to EJS
+    });
+
 });
 
 app.listen(port, () => {
