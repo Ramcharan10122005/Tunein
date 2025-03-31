@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import pg from "pg";
 import { fileURLToPath } from "url";
+import multer from "multer";
 import bodyParser from "body-parser";
 import bcrypt from "bcrypt";
 import passport from "passport";
@@ -18,6 +19,8 @@ const saltrounds=10;
 env.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
@@ -247,7 +250,27 @@ app.get("/dashboard", (req, res) => {
     }
     res.send("Welcome to your dashboard!");
 });
+app.get("/admin", async (req, res) => {
+    const result = await db.query("SELECT * FROM songs ORDER BY id DESC");
+    res.render("add", { songs: result.rows });
+});
+app.post("/add-song", upload.fields([{ name: "song" }, { name: "cover" }]), async (req, res) => {
+    try {
+        const { title, artist, duration } = req.body;
+        const songFile = req.files["song"][0].buffer;
+        const coverFile = req.files["cover"][0].buffer;
 
+        await db.query(
+            "INSERT INTO songs (title, artist, duration, song, cover) VALUES ($1, $2, $3, $4, $5)",
+            [title, artist, duration, songFile, coverFile]
+        );
+
+        res.redirect("/admin");
+    } catch (error) {
+        console.error("Error inserting song:", error);
+        res.status(500).send("Error saving the song");
+    }
+});
 // liked songs (Authenticated Route)
 app.use((req, res, next) => {
     req.user = { userId: 5, username: "ijk" }; // Hardcoded test user
@@ -278,6 +301,37 @@ app.get("/liked-songs", (req, res) => {
         loggedInUserId: loggedInUser.userId // Pass userId to EJS
     });
 
+});
+app.get("/play/:title", async (req, res) => {
+    try {
+        const title = decodeURIComponent(req.params.title);
+        console.log(title);
+
+        const result = await db.query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [title]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).send("Song not found");
+        }
+
+        const songdet = result.rows[0];
+
+        // Convert image and audio from `bytea` to Base64
+        const imageBase64 = `data:image/jpeg;base64,${songdet.cover.toString("base64")}`;
+        const audioBase64 = `data:audio/mpeg;base64,${songdet.song.toString("base64")}`;
+
+        // Render EJS with song details
+        res.render("dashboard", {
+            song: {
+                title: songdet.title,
+                artist: songdet.artist,
+                image: imageBase64,
+                audio: audioBase64,
+            },
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+    }
 });
 
 app.listen(port, () => {

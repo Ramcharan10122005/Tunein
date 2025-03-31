@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Songs</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            padding: 20px;
+            background-color: #f4f4f4;
+        }
+
+        h2 {
+            color: #333;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-width: 300px;
+        }
+
+        input,
+        button {
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: white;
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Add a New Song</h2>
+    <form action="/add-song" method="POST" enctype="multipart/form-data">
+        <input type="text" name="title" placeholder="Song Title" required>
+        <input type="text" name="artist" placeholder="Artist" required>
+        <input type="text" name="duration" placeholder="Duration (e.g., 03:45)" required>
+        <label>Song File:</label>
+        <input type="file" name="song" required>
+        <label>Cover Image:</label>
+        <input type="file" name="cover" required>
+        <button type="submit">Upload</button>
+    </form>
+
+    <h2>Uploaded Songs</h2>
+    <ul>
+        <% songs.forEach(song=> { %>
+            <li>
+                <strong>
+                    <%= song.title %>
+                </strong> - <%= song.artist %> (<%= song.duration %>)
+            </li>
+            <% }); %>
+    </ul>
+</body>
+
+</html>

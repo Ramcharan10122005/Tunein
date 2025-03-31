@@ -245,6 +245,7 @@ header {
     border-radius: 5px;
     margin: 0 20px;
     position: relative;
+    overflow: hidden;
 }
 
 .progress-bar span {
@@ -253,6 +254,7 @@ header {
     width: 0%;
     background: #b62020;
     border-radius: 5px;
+    transition: width 0.1s linear;
 }
 
 .volume-container {
