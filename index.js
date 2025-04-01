@@ -73,9 +73,16 @@ app.get("/auth/google",
 app.get(
     "/auth/google/callback",
     passport.authenticate("google", {
-        successRedirect: "/",
         failureRedirect: "/login",
-    })
+    }),
+    (req, res) => {
+        if (req.user) {
+            // Make sure to set the session username
+            req.session.username = req.user.username;
+            console.log("Session after Google auth:", req.session); // Add this to debug
+        }
+        res.redirect('/');
+    }
 );
 app.get("/login", (req, res) => {
     res.render("login", {
@@ -136,17 +143,17 @@ app.post("/login", (req, res, next) => {
         return res.render("login", {
           error: true,
           errorType: "user-exists" || "",
-          errorMessage: info.message, // Pass error message from Passport
+          errorMessage: info.message,
         });
       }
       
       req.logIn(user, (err) => {
         if (err) return next(err);
-        req.session.username = user.username;
-        return res.redirect("/"); // Redirect on success
+        req.session.username = user.username;  // This line is already correct
+        return res.redirect("/"); 
       });
     })(req, res, next);
-  });
+});
 // app.post("/login", async (req, res) => {
 //     try {
 //         const { username, password } = req.body;
@@ -489,27 +496,38 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: "http://localhost:3000/auth/google/callback",
-      userProfileURL:"https://www.googleapis.com/oauth2/v3/userinfo",
+      userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
     },
-    async (acessToken,refresToken,profile,cb)=>{
+    async (accessToken, refreshToken, profile, cb) => {
       try {
-        const result=await db.query("select from users where email=($1)",[profile.email]);
-        if(result.rows.length==0){
-          const newUser=await db.query("insert into users(username,email,password) values($1,$2,$3)",[profile.name,profile.email,"google"]);
-          return cb(null,newUser.rows[0]);
+        console.log("Google profile received:", profile); // Debug log
+        const result = await db.query("SELECT * FROM users WHERE email = $1", [profile.emails[0].value]);
+        
+        if(result.rows.length === 0) {
+          // Create new user
+          const newUser = await db.query(
+            "INSERT INTO users(username, email, password) VALUES($1, $2, $3) RETURNING *",
+            [profile.displayName, profile.emails[0].value, "google"]
+          );
+          return cb(null, {
+            id: newUser.rows[0].id,
+            username: profile.displayName,
+            email: profile.emails[0].value
+          });
+        } else {
+          // Return existing user
+          return cb(null, {
+            id: result.rows[0].id,
+            username: result.rows[0].username,
+            email: result.rows[0].email
+          });
         }
-        else{
-          return cb(null,result.rows[0]);
-        }
-    }
-    catch(err){
-      console.log(err);
-      return cb(err);
-    }
-  }
-  )
-    
-  )
+      } catch(err) {
+        console.log("Error in Google Strategy:", err);
+        return cb(err);
+      }
+    })
+);
   passport.serializeUser((user, cb) => {
     cb(null, user);
   });
