@@ -309,6 +309,83 @@ app.post("/add-song", upload.fields([{ name: "song" }, { name: "cover" }]), asyn
         res.status(500).send("Error saving the song");
     }
 });
+// Route for playlist 
+app.get("/playlists", (req, res) => {
+    const loggedInUser = req.user || { userId: 5, username: "ijk" }; // Temporary hardcoded user
+
+    if (!loggedInUser) {
+        return res.redirect("/login");
+    }
+
+    const loggedInUserId = loggedInUser.userId; // ✅ Define it before using
+
+    const playlists = [
+        { userId: 5, username: "ijk", name: "Chill Vibes", songs: ["Industry Baby", "Good 4 U", "Sunflower", "Blinding Lights", "Save Your Tears", "Levitating"] },
+        { userId: 5, username: "ijk", name: "Workout", songs: ["Starboy", "Uptown Funk", "Stronger", "Can't Hold Us", "Till I Collapse", "Eye of the Tiger"] },
+        { userId: 5, username: "ijk", name: "Top Hits", songs: ["Blinding Lights", "Shape of You", "Believer", "Dance Monkey"] }
+    ];
+
+
+
+    res.render("playlist.ejs", { playlists, loggedInUserId });
+});
+
+
+// Route to display songs in a playlist
+app.get("/playlists/songs", (req, res) => {
+    const playlistName = req.query.name;  // Use req.query to get the playlist name from query string
+    const loggedInUserId = req.session.userId || 5;
+    const playlists = [
+        {
+            userId: 5,
+            username: "ijk",
+            name: "Chill Vibes",
+            songs: [
+                { name: "Industry Baby", artist: "Lil Nas X" },
+                { name: "Good 4 U", artist: "Olivia Rodrigo" },
+                { name: "Sunflower", artist: "Post Malone" },
+                { name: "Blinding Lights", artist: "The Weeknd" },
+                { name: "Save Your Tears", artist: "The Weeknd" },
+                { name: "Levitating", artist: "Dua Lipa" }
+            ]
+        },
+        {
+            userId: 5,
+            username: "ijk",
+            name: "Workout",
+            songs: [
+                { name: "Starboy", artist: "The Weeknd" },
+                { name: "Uptown Funk", artist: "Bruno Mars" },
+                { name: "Stronger", artist: "Kanye West" },
+                { name: "Can't Hold Us", artist: "Macklemore" },
+                { name: "Till I Collapse", artist: "Eminem" },
+                { name: "Eye of the Tiger", artist: "Survivor" }
+            ]
+        },
+        {
+            userId: 5,
+            username: "ijk",
+            name: "Top Hits",
+            songs: [
+                { name: "Blinding Lights", artist: "The Weeknd" },
+                { name: "Shape of You", artist: "Ed Sheeran" },
+                { name: "Believer", artist: "Imagine Dragons" },
+                { name: "Dance Monkey", artist: "Tones and I" }
+            ]
+        }
+    ];
+
+
+    // Find the playlist with the matching name
+    const selectedPlaylist = playlists.find(playlist => playlist.name === playlistName);
+
+    if (!selectedPlaylist) {
+        return res.status(404).send("Playlist not found");
+    }
+
+    res.render("playlist_songs", { playlist: selectedPlaylist, playlists: playlists, loggedInUserId: loggedInUserId });
+
+});
 // liked songs (Authenticated Route)
 app.use((req, res, next) => {
     req.user = { userId: 5, username: "ijk" }; // Hardcoded test user
