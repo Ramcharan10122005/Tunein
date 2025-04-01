@@ -457,31 +457,6 @@
             color: #b3b3b3;
             font-size: 16px;
         }
-
-        .create-playlist-container {
-            display: flex;
-            justify-content: flex-end;
-            /* Moves it to the right */
-            align-items: center;
-            margin: 20px 0;
-        }
-
-        .create-playlist-btn {
-            background-color: red;
-            color: white;
-            font-size: 16px;
-            font-weight: bold;
-            padding: 12px 20px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: background-color 0.3s ease-in-out;
-        }
-
-        .create-playlist-btn:hover {
-            background-color: darkred;
-        }
-
     </style>
 </head>
 
@@ -597,98 +572,87 @@
             <div class="liked-songs-image">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
                     stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-list-music-icon lucide-list-music">
-                    <path d="M21 15V6" />
-                    <path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
-                    <path d="M12 12H3" />
-                    <path d="M16 6H3" />
-                    <path d="M12 18H3" />
+                    class="lucide lucide-file-music-icon lucide-file-music">
+                    <path d="M10.5 22H18a2 2 0 0 0 2-2V7l-5-5H6a2 2 0 0 0-2 2v8.4" />
+                    <path d="M8 18v-7.7L16 9v7" />
+                    <circle cx="14" cy="16" r="2" />
+                    <circle cx="6" cy="18" r="2" />
                 </svg>
             </div>
             <div class="liked-songs-info">
-                <h1>Playlists</h1>
-                <% const headerUserPlaylists=playlists.filter(playlist=> playlist.userId === loggedInUserId); %>
-                    <% if (headerUserPlaylists.length> 0) { %>
-                        <div class="username">
-                            <%= headerUserPlaylists[0].username %>
-                        </div>
-                        <div class="songs-count">
-                            <%= headerUserPlaylists.length %> Playlists
-                        </div>
-                        <% } else { %>
-                            <div class="songs-count">0 playlists</div>
-                            <% } %>
-                            <div class="create-playlist-container">
-                                <form action="/create-playlist" method="POST">
-                                    <button type="submit" class="create-playlist-btn">+ Create a Playlist</button>
-                                </form>
-                            </div>
+                <h1>
+                    <%= playlist.name %>
+                </h1> <!-- Display Playlist Name -->
+                <% if (playlist.songs.length> 0) { %>
+                    <div class="username">
+                        <%= playlist.username %> <!-- Display Username Correctly -->
+                    </div>
+                    <div class="songs-count">
+                        <%= playlist.songs.length %> songs
+                    </div>
+                    <% } else { %>
+                        <div class="songs-count">0 songs</div>
+                        <% } %>
             </div>
         </div>
 
         <div class="songs-list-container">
-            <% const tableUserPlaylists=playlists.filter(playlist=> playlist.userId === loggedInUserId); %>
-                <% if (tableUserPlaylists.length> 0) { %>
-                    <table class="songs-list">
-                        <thead>
+            <% if (playlist.songs.length> 0) { %>
+                <table class="songs-list">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px">#</th>
+                            <th>TITLE</th>
+                            <th>ALBUM</th>
+                            <th>ARTIST</th>
+                            <th style="width: 50px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% playlist.songs.forEach((song, index)=> { %>
                             <tr>
-                                <th style="width: 50px">#</th>
-                                <th>PLAYLIST TITLE</th>
-                                <th style="width: 50px"></th>
+                                <td class="index-number">
+                                    <%= index + 1 %>
+                                </td>
+                                <td>
+                                    <div class="song-title-info">
+                                        <div class="song-cover" style="background-color: #333;">
+                                            <!-- You can use real image if available -->
+                                        </div>
+                                        <div class="song-details">
+                                            <div class="song-title">
+                                                <%= song.name %> <!-- Print song name correctly -->
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>Single</td> <!-- Placeholder for Album -->
+                                <td>
+                                    <%= song.artist %>
+                                </td> <!-- Print artist name -->
+                                <td>
+                                    <div class="song-actions">
+                                        <button class="action-btn">⋮</button>
+                                        <div class="action-menu">
+                                            <form action="/remove-liked" method="POST">
+                                                <input type="hidden" name="userId" value="<%= loggedInUserId %>">
+                                                <input type="hidden" name="songName" value="<%= song.name %>">
+                                                <button type="submit">Remove from playlist</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <% tableUserPlaylists.forEach((playlist, index)=> { %>
-                                <tr>
-                                    <td class="index-number">
-                                        <%= index + 1 %>
-                                    </td>
-                                    <td>
-                                        <div class="song-title-info">
-                                            <div class="song-cover" style="background-color: #333;">
-                                                <!-- You can use real image if available -->
-                                                <!-- <img src="<%= playlist.coverUrl %>" alt="<%= playlist.name %>" width="40" height="40"> -->
-                                            </div>
-                                            <div class="song-details">
-                                                <div class="song-title">
-                                                    <form action="/playlists/songs" method="GET" class="playlist-form">
-                                                        <input type="hidden" name="name" value="<%= playlist.name %>">
-                                                        <span class="playlist-text" style="cursor: pointer;">
-                                                            <%= playlist.name %>
-                                                        </span>
-                                                    </form>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-
-                                    <td>
-                                        <div class="song-actions">
-                                            <button class="action-btn">⋮</button>
-                                            <div class="action-menu">
-                                                <form action="/remove-playlist" method="POST">
-                                                    <input type="hidden" name="userId" value="<%= loggedInUserId %>">
-                                                    <input type="hidden" name="songName" value="<%= playlist.name %>">
-                                                    <button type="submit">Remove the playlist</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <% }); %>
-                        </tbody>
-                    </table>
-                    <% } else { %>
-                        <div class="no-songs">
-                            <p>You haven’t created any playlists yet. Start exploring and build a collection of your
-                                favorite songs!</p>
-                        </div>
-                        <% } %>
-                          
-
+                            <% }); %>
+                    </tbody>
+                </table>
+                <% } else { %>
+                    <div class="no-songs">
+                        <p>"You haven't added any songs yet. Start exploring and build your perfect playlist!"</p>
+                    </div>
+                    <% } %>
         </div>
     </div>
-
 
 
     <div class="music-controls">
@@ -759,14 +723,6 @@
             });
 
             lucide.createIcons();
-        });
-
-        document.addEventListener("DOMContentLoaded", function () {
-            document.querySelectorAll(".playlist-text").forEach(item => {
-                item.addEventListener("click", function () {
-                    this.closest("form").submit();  // Submit the parent form
-                });
-            });
         });
     </script>
 </body>
