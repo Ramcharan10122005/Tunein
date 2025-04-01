@@ -156,7 +156,8 @@ header {
     outline: none;
     transition: background 0.3s ease;
 }
-.username-container{
+
+.username-container {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -174,16 +175,19 @@ header {
     outline: none;
     font-size: 20px;
 }
+
 .usernam-greet {
     color: white;
     font-weight: bold;
 }
+
 .username-name {
     color: red;
     font-family: 'Pacifico', cursive;
     font-weight: bold;
     letter-spacing: 2px;
 }
+
 .sign-in-box:hover {
     background-color: #9e1c1c;
 }
@@ -207,9 +211,20 @@ header {
     box-sizing: border-box;
     z-index: 10;
     border-top: 1px solid #333;
-    transition: none !important;   /* Disable any transition effect */
-    left: 0 !important;            /* Prevents shifting */
+    transition: none !important;
+    /* Disable any transition effect */
+    left: 0 !important;
+    /* Prevents shifting */
     margin: 0 !important;
+}
+
+.song-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 4px;
+    /* Slight rounding like Apple Music */
+    object-fit: cover;
+    margin-right: 10px;
 }
 
 .track-info {
@@ -277,18 +292,60 @@ header {
 .volume-slider input {
     transform: rotate(-90deg);
     width: 80px;
+    height: 18px;
     position: absolute;
-    left: -37px;
-    top: 30px;
+    left: -38.5px;
+    top: 29px;
+    bottom: 28px;
+}
+
+.volume-slider input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 8px;
+    height: 100px;
+    /* Adjust height */
+    background: rgb(247, 247, 247);
+    border-radius: 5px;
+    outline: none;
+    writing-mode: vertical-lr;
+    /* Makes it vertical */
+    transform: rotate(180deg);
+    /* Flip for correct direction */
+    margin-left: 36px;
+    margin-top: -50px;
+}
+
+.volume-slider input[type="range"]::-webkit-slider-runnable-track {
+    width: 8px;
+    height: 100px;
+    background: rgb(251, 250, 250);
+    border-radius: 5px;
+    
+}
+
+.volume-slider input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 16px;
+    height: 16px;
+    margin-left: -5px;
+    background: red;
+    border-radius: 50%;
+    cursor: pointer;
+    position: relative;
 }
 
 .date-added {
     color: #b3b3b3;
     font-size: 14px;
 }
+
 body.sidebar-open .music-controls {
-    width: 100%;  /* Ensures it stays full width */
-    margin-left: 0; /* Prevents shifting */
+    width: 100%;
+    /* Ensures it stays full width */
+    margin-left: 0;
+    /* Prevents shifting */
     margin-right: 0;
 }
 

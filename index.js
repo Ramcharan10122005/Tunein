@@ -6,7 +6,7 @@ import multer from "multer";
 import bodyParser from "body-parser";
 import bcrypt from "bcrypt";
 import passport from "passport";
-import { Strategy as LocalStrategy } from "passport-local";
+import { Strategy } from "passport-local";
 import GoogleStrategy from "passport-google-oauth2";
 import session from "express-session";
 import env from "dotenv";
@@ -15,7 +15,7 @@ import nodemailer from "nodemailer";
 
 const app = express();
 const port = 3000;
-const saltrounds=10;
+const saltrounds = 10;
 env.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -23,6 +23,14 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
+app.use(
+    session({
+        secret: process.env.SESSION_SECRET,
+        resave: false,
+        saveUninitialized: true,
+    })
+);
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
@@ -37,55 +45,67 @@ let users = [
 ];
 
 let otpStore = {};
-const db=new pg.Client({
+const db = new pg.Client({
     user: process.env.DB_USER,
     host: process.env.DB_HOST,
-    database:process.env.DB_DATABASE,
+    database: process.env.DB_DATABASE,
     password: process.env.DB_PASSWORD,
-    port:process.env.DB_PORT,
+    port: process.env.DB_PORT,
 })
 db.connect()
     .then(() => console.log("✅ Connected to PostgreSQL"))
     .catch(err => console.error("❌ Database connection error:", err));
 // Home Route
 app.get("/", (req, res) => {
-    res.render('dashboard',{
-        user:req.session.username,
+    res.render('dashboard', {
+        user: req.session.username,
     });
 });
-app.get("/home",(req,res)=>{
+app.get("/home", (req, res) => {
     res.redirect("/");
 })
 // Authentication Routes
+app.get("/auth/google",
+    passport.authenticate("google", {
+        scope: ["profile", "email"],
+    })
+)
+app.get(
+    "/auth/google/callback",
+    passport.authenticate("google", {
+        successRedirect: "/",
+        failureRedirect: "/login",
+    })
+);
 app.get("/login", (req, res) => {
-    res.render("login",{
-        error: false, 
+    res.render("login", {
+        error: false,
         errorType: "user-exists" || "",
         errorMessage: "User with this username or email already exists",
     });
 });
 app.get("/signup", (req, res) => {
-    res.render("signup",{
-        error: false, 
+    res.render("signup", {
+        error: false,
         errorType: "user-exists" || "",
         errorMessage: "User with this username or email already exists",
     });
 });
 app.get("/reset", (req, res) => {
-    res.render("reset",{ 
-        error: false, 
+    res.render("reset", {
+        error: false,
         errorType: "user-exists" || "",
         errorMessage: "Invalid Password",
     });
 });
-app.post("/signup",async(req,res)=>{
+app.post("/signup", async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
         const user = await db.query("SELECT * FROM users WHERE username = $1 OR email = $2", [username, email]);
         if (user.rows.length > 0) {
-            return res.render("signup", { 
-                error: true, 
+            return res.render("signup", {
+                error: true,
                 errorType: "user-exists" || "",
                 errorMessage: "User with this username or email already exists",
             });
@@ -100,69 +120,87 @@ app.post("/signup",async(req,res)=>{
             [username, email, hashedPassword]
         );
         req.session.authenticated = true;
-        req.session.username=username;
+        req.session.username = username;
         //req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
-        res.redirect("/"); 
-        console.log(result.rows[0] );
+        res.redirect("/");
+        console.log(result.rows[0]);
     } catch (err) {
         console.error(err);
         res.status(500).json({ message: "Internal Server Error" });
     }
 })
-app.post("/login",async(req,res)=>{
-    try{
-        const { username, password } = req.body;
-        const user = await db.query("SELECT * FROM users WHERE username = $1", [username]);
-        if (user.rows.length === 0) {
-            return res.render("login", { 
-                error: true, 
-                errorType: "user-exists" || "",
-                errorMessage: "Invalid username",
-            });
-        }
-        const isValidPassword = await bcrypt.compare(password, user.rows[0].password);
-        if (!isValidPassword) {
-            return res.render("login", { 
-                error: true, 
-                errorType: "user-exists" || "",
-                errorMessage: "Invalid Password",
-            });
-        }
-        req.session.authenticated = true;
-        req.session.username=username;
-       // req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
-        res.redirect("/"); 
-    }
-    catch(err){
-        console.error(err);
-        res.status(500).json({ message: "Internal Server Error" });
-    }
-})
+app.post("/login", (req, res, next) => {
+    passport.authenticate("local", (err, user, info) => {
+      if (err) return next(err);
+      if (!user) {
+        return res.render("login", {
+          error: true,
+          errorType: "user-exists" || "",
+          errorMessage: info.message, // Pass error message from Passport
+        });
+      }
+      
+      req.logIn(user, (err) => {
+        if (err) return next(err);
+        req.session.username = user.username;
+        return res.redirect("/"); // Redirect on success
+      });
+    })(req, res, next);
+  });
+// app.post("/login", async (req, res) => {
+//     try {
+//         const { username, password } = req.body;
+//         const user = await db.query("SELECT * FROM users WHERE username = $1", [username]);
+//         if (user.rows.length === 0) {
+//             return res.render("login", {
+//                 error: true,
+//                 errorType: "user-exists" || "",
+//                 errorMessage: "Invalid username",
+//             });
+//         }
+//         const isValidPassword = await bcrypt.compare(password, user.rows[0].password);
+//         if (!isValidPassword) {
+//             return res.render("login", {
+//                 error: true,
+//                 errorType: "user-exists" || "",
+//                 errorMessage: "Invalid Password",
+//             });
+//         }
+//         req.session.authenticated = true;
+//         req.session.username = username;
+//         // req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
+//         res.redirect("/");
+//     }
+//     catch (err) {
+//         console.error(err);
+//         res.status(500).json({ message: "Internal Server Error" });
+//     }
+// })
 // Password Reset
-app.post("/reset", async(req, res) => {
+app.post("/reset", async (req, res) => {
     const email = req.body.email.trim();
     console.log("Entered Email:", email);
     const user = await db.query("SELECT * FROM users WHERE email = $1", [email]);
     console.log(user);
     if (user.rows.length != 0) {
-        req.session.resetEmail = email; 
+        req.session.resetEmail = email;
         console.log(req.session);
         res.redirect("/verify-2fa");
     } else {
-        return res.render("reset", { 
-            error: true, 
+        return res.render("reset", {
+            error: true,
             errorType: "user-exists" || "",
             errorMessage: "Invalid Email",
         });
     }
 });
-app.post("/new",async(req,res)=>{
-    try{
+app.post("/new", async (req, res) => {
+    try {
         const { password, confirm_password } = req.body;
         const email = req.session.resetEmail;
         if (password !== confirm_password) {
-            return res.render("new", { 
-                error: true, 
+            return res.render("new", {
+                error: true,
                 errorType: "user-exists" || "",
                 errorMessage: "Passwords do not match",
             })
@@ -172,10 +210,10 @@ app.post("/new",async(req,res)=>{
         req.session.resetEmail = null;
         res.redirect("/login");
     }
-    catch(err){
+    catch (err) {
         console.error(error);
-        res.status(500).render("reset", { 
-            error: true, 
+        res.status(500).render("reset", {
+            error: true,
             errorType: "server-error",
             errorMessage: "An error occurred. Please try again.",
         });
@@ -233,14 +271,14 @@ app.post("/verify-2fa", (req, res) => {
 });
 
 // Dashboard (Authenticated Route)
-app.get("/new",(req,res)=>{
-    if(req.session.authenticated)
-    res.render("new",{ 
-        error: false, 
-        errorType: "user-exists" || "",
-        errorMessage: "Passwords do not match",
-    });
-    else{
+app.get("/new", (req, res) => {
+    if (req.session.authenticated)
+        res.render("new", {
+            error: false,
+            errorType: "user-exists" || "",
+            errorMessage: "Passwords do not match",
+        });
+    else {
         res.redirect("/reset");
     }
 })
@@ -296,8 +334,8 @@ app.get("/liked-songs", (req, res) => {
     // Filter liked songs for the "logged-in" user
     const userLikedSongs = likedSongs.filter(song => song.username === loggedInUser.username);
 
-    res.render("liked.ejs", { 
-        likedSongs, 
+    res.render("liked.ejs", {
+        likedSongs,
         loggedInUserId: loggedInUser.userId // Pass userId to EJS
     });
 
@@ -327,13 +365,80 @@ app.get("/play/:title", async (req, res) => {
                 image: imageBase64,
                 audio: audioBase64,
             },
+            user:req.session.username
         });
     } catch (err) {
         console.error(err);
         res.status(500).send("Internal Server Error");
     }
 });
-
+passport.use(
+    "local",
+    new Strategy(async function verify(username, password, cb) {
+      try {
+        const result = await db.query("SELECT * FROM users WHERE username = $1", [
+          username,
+        ]);
+  
+        if (result.rows.length === 0) {
+          return cb(null, false, { message: "Invalid username" });
+        }
+  
+        const user = result.rows[0];
+        const storedHashedPassword = user.password;
+  
+        bcrypt.compare(password, storedHashedPassword, (err, valid) => {
+          if (err) {
+            console.error("Error comparing passwords:", err);
+            return cb(err);
+          }
+  
+          if (valid) {
+            return cb(null, user); // Successful login
+          } else {
+            return cb(null, false, { message: "Invalid password" });
+          }
+        });
+      } catch (err) {
+        console.log(err);
+        return cb(err);
+      }
+    })
+  );
+  
+  passport.use(
+    "google",
+    new GoogleStrategy({
+      clientID: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      callbackURL: "http://localhost:3000/auth/google/callback",
+      userProfileURL:"https://www.googleapis.com/oauth2/v3/userinfo",
+    },
+    async (acessToken,refresToken,profile,cb)=>{
+      try {
+        const result=await db.query("select from users where email=($1)",[profile.email]);
+        if(result.rows.length==0){
+          const newUser=await db.query("insert into users(username,email,password) values($1,$2,$3)",[profile.name,profile.email,"google"]);
+          return cb(null,newUser.rows[0]);
+        }
+        else{
+          return cb(null,result.rows[0]);
+        }
+    }
+    catch(err){
+      console.log(err);
+      return cb(err);
+    }
+  }
+  )
+    
+  )
+  passport.serializeUser((user, cb) => {
+    cb(null, user);
+  });
+  passport.deserializeUser((user, cb) => {
+    cb(null, user);
+  });
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
