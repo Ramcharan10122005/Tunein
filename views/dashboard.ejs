@@ -18,9 +18,9 @@
                 In</span>
         </div>
         <div class="search-container">
-            <form action="/search" method="GET">
+            <form id="search-form" onsubmit="handleSearch(event)">
                 <i data-lucide="search" class="search-icon"></i>
-                <input type="text" name="query" placeholder="Search songs, playlists..." class="search-bar">
+                <input type="text" name="query" id="search-input" placeholder="Search songs, playlists..." class="search-bar">
                 <button type="submit" style="display: none;"></button>
             </form>
         </div>
@@ -45,6 +45,13 @@
                 </div>
                 <% } %>
     </header>
+
+    <div id="search-results" class="search-results" style="display: none;">
+        <h2>Search Results</h2>
+        <div class="songs-grid" id="search-results-grid" >
+            <!-- Search results will be populated here -->
+        </div>
+    </div>
 
     <div class="sidebar">
         <ul>
@@ -111,7 +118,7 @@
     </div>
 
     <div class="main-content">
-        <div class="carousel-container">
+        <div class="carousel-container" id="carousel-container">
             <div class="carousel">
                 <div class="slide" onclick="redirectToPlay('A-List Pop')">
                     <img src="/images/thegiver.webp" alt="A-List Pop">
@@ -254,7 +261,7 @@
             <button><i data-lucide="heart"></i></button>
             <div class="volume-container">
                 <button id="volume-btn"><i data-lucide="volume-2"></i></button>
-                <div class="volume-slider" id="volume-slider">
+                <div class="volume-slider" id="volume-slider" style="display: none;left: 1841px;bottom: 52px;">
                     <input type="range" id="volume-input" min="0" max="100" value="50">
                 </div>
             </div>
@@ -344,6 +351,57 @@
 
             // Also adjust on window resize
             window.addEventListener('resize', adjustCarousel);
+
+            // Add search functionality
+            const searchForm = document.getElementById('search-form');
+            const searchInput = document.getElementById('search-input');
+            const searchResults = document.getElementById('search-results');
+            const carouselContainer = document.getElementById('carousel-container');
+            const searchResultsGrid = document.getElementById('search-results-grid');
+
+            searchForm.addEventListener('submit', handleSearch);
+            searchInput.addEventListener('input', handleSearch);
+
+            async function handleSearch(event) {
+                event.preventDefault();
+                const query = searchInput.value.trim();
+                
+                if (query.length === 0) {
+                    searchResults.style.display = 'none';
+                    carouselContainer.style.display = 'block';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/search?query=${encodeURIComponent(query)}`);
+                    const data = await response.json();
+                    
+                    // Hide carousel and show search results
+                    carouselContainer.style.display = 'none';
+                    searchResults.style.display = 'block';
+                    
+                    // Clear previous results
+                    searchResultsGrid.innerHTML = '';
+                    
+                    // Display new results
+                    data.forEach(song => {
+                        const songElement = document.createElement('div');
+                        songElement.className = 'song';
+                        songElement.id = 'searched-song';
+                        songElement.innerHTML = `
+                            <img src="${song.image}" alt="${song.title}">
+                            <div>
+                                <h4>${song.title}</h4>
+                                <p>${song.artist}</p>
+                            </div>
+                        `;
+                        songElement.onclick = () => redirectToPlay(song.title);
+                        searchResultsGrid.appendChild(songElement);
+                    });
+                } catch (error) {
+                    console.error('Error searching:', error);
+                }
+            }
         });
 
         function redirectTo(pageName) {
@@ -358,7 +416,7 @@
         }
         // Carousel functionality for responsive slides per view
         let currentGroup = 0;
-        let slidesPerView = 3; // Default, will be adjusted based on screen size and sidebar state
+        let slidesPerView = 3; // Default, will be adjusted based on screen size and sidebar 
 
         function initCarousel() {
             // Set initial position

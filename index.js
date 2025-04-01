@@ -534,6 +534,35 @@ passport.use(
   passport.deserializeUser((user, cb) => {
     cb(null, user);
   });
+
+// Search endpoint
+app.get("/search", async (req, res) => {
+    try {
+        const query = req.query.query;
+        if (!query) {
+            return res.json([]);
+        }
+
+        // Search in songs table by title or artist
+        const result = await db.query(
+            "SELECT title, artist, cover FROM songs WHERE LOWER(title) LIKE LOWER($1) OR LOWER(artist) LIKE LOWER($1)",
+            [`%${query}%`]
+        );
+
+        // Convert cover images to base64
+        const songs = result.rows.map(song => ({
+            title: song.title,
+            artist: song.artist,
+            image: `data:image/jpeg;base64,${song.cover.toString('base64')}`
+        }));
+
+        res.json(songs);
+    } catch (err) {
+        console.error('Error searching songs:', err);
+        res.status(500).json({ error: 'Internal server error' });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
