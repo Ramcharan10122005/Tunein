@@ -8,6 +8,7 @@ import bcrypt from "bcrypt";
 import passport from "passport";
 import { Strategy } from "passport-local";
 import GoogleStrategy from "passport-google-oauth2";
+import GitHubStrategy  from "passport-github2";
 import session from "express-session";
 import env from "dotenv";
 import crypto from "crypto";
@@ -65,6 +66,22 @@ app.get("/home", (req, res) => {
     res.redirect("/");
 })
 // Authentication Routes
+app.get("/auth/github", 
+    passport.authenticate("github", { 
+        scope: ["user:email"] 
+    }
+));
+app.get(
+    "/auth/github/callback",
+    passport.authenticate("github", { failureRedirect: "/login" }),
+    (req, res) => {
+        if (req.user) {
+            req.session.username = req.user.username;
+            console.log("Session after Github auth:", req.session);
+        }
+        res.redirect('/');
+    }
+);
 app.get("/auth/google",
     passport.authenticate("google", {
         scope: ["profile", "email"],
@@ -548,35 +565,34 @@ app.get("/playlists/songs", (req, res) => {
 
 });
 // liked songs (Authenticated Route)
-app.use((req, res, next) => {
-    req.user = { userId: 5, username: "ijk" }; // Hardcoded test user
-    next();
-});
 
-app.get("/liked-songs", (req, res) => {
-    const loggedInUser = req.user; // Get the "logged-in" user (hardcoded)
 
-    if (!loggedInUser) {
+app.get("/liked-songs", async (req, res) => {
+    if (!req.isAuthenticated()) {
         return res.redirect("/login");
     }
 
-    const likedSongs = [
-        { userId: 5, username: "ijk", songName: "Industry Baby", artist: "Lil Nas X & Jack Harlow" },
-        { userId: 5, username: "ijk", songName: "Good 4 U", artist: "Olivia Rodrigo" },
-        { userId: 5, username: "ijk", songName: "Starboy", artist: "The Weeknd" },
-        { userId: 5, username: "ijk", songName: "Sunflower", artist: "Post Malone & Swae Lee" },
-        { userId: 5, username: "ijk", songName: "Uptown Funk", artist: "Mark Ronson ft. Bruno Mars" },
-        { userId: 7, username: "xyz", songName: "Blinding Lights", artist: "The Weeknd" }
-    ];
+    const userId = req.user.id; // Get user ID from Passport session
 
-    // Filter liked songs for the "logged-in" user
-    const userLikedSongs = likedSongs.filter(song => song.username === loggedInUser.username);
+    try {
+        // Fetch liked songs for the logged-in user from the database
+        const result = await db.query(
+            `SELECT users.id AS userId, users.username, songs.title AS songName, songs.artist 
+             FROM liked 
+             JOIN users ON liked.userid = users.id 
+             JOIN songs ON liked.songid = songs.id 
+             WHERE liked.userid = $1`,
+            [userId]
+        );
 
-    res.render("liked.ejs", {
-        likedSongs,
-        loggedInUserId: loggedInUser.userId // Pass userId to EJS
-    });
-
+        res.render("liked.ejs", {
+            likedSongs: result.rows,
+            loggedInUserId: userId
+        });
+    } catch (error) {
+        console.error("Error fetching liked songs:", error);
+        res.status(500).send("Internal Server Error");
+    }
 });
 app.get("/play/:title", async (req, res) => {
     try {
@@ -683,12 +699,68 @@ passport.use(
       }
     })
 );
-  passport.serializeUser((user, cb) => {
-    cb(null, user);
-  });
-  passport.deserializeUser((user, cb) => {
-    cb(null, user);
-  });
+passport.use(
+    "github",
+    new GitHubStrategy(
+        {
+            clientID: process.env.GITHUB_CLIENT_ID,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET,
+            callbackURL: "http://localhost:3000/auth/github/callback",
+        },
+        async (accessToken, refreshToken, profile, cb) => {
+            try {
+                console.log("GitHub profile received:", profile); // Debugging
+
+                const email = profile.emails?.[0]?.value || ""; // Get email (if available)
+                const username = profile.username || profile.displayName || "GitHubUser";
+
+                // Check if user already exists in the database by email
+                const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+
+                if (result.rows.length === 0) {
+                    // Insert new user into the database
+                    const newUser = await db.query(
+                        "INSERT INTO users(username, email, password) VALUES($1, $2, $3) RETURNING *",
+                        [username, email, "github"]
+                    );
+
+                    return cb(null, {
+                        id: newUser.rows[0].id,
+                        username: newUser.rows[0].username,
+                        email: newUser.rows[0].email,
+                    });
+                } else {
+                    // User exists, return existing user
+                    return cb(null, {
+                        id: result.rows[0].id,
+                        username: result.rows[0].username,
+                        email: result.rows[0].email,
+                    });
+                }
+            } catch (err) {
+                console.error("Error in GitHub Strategy:", err);
+                return cb(err);
+            }
+        }
+    )
+);
+passport.serializeUser((user, cb) => {
+    cb(null, user.id);
+});
+
+passport.deserializeUser(async (id, cb) => {
+    try {
+        const result = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+        if (result.rows.length > 0) {
+            cb(null, result.rows[0]);
+        } else {
+            cb(null, false);
+        }
+    } catch (err) {
+        cb(err);
+    }
+});
+
 
 // Search endpoint
 app.get("/search", async (req, res) => {

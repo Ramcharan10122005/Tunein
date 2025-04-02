@@ -179,14 +179,17 @@ header {
     border: none;
     outline: none;
     font-size: 20px;
+    flex-direction: column;
 }
 
 .usernam-greet {
+    margin-top: -10px;
     color: white;
     font-weight: bold;
 }
 
 .username-name {
+    margin-top: -25px;
     color: red;
     font-family: 'Pacifico', cursive;
     font-weight: bold;
