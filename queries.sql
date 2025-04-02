@@ -14,6 +14,9 @@ CREATE TABLE songs (
     artist VARCHAR(255) NOT NULL,
     duration INTERVAL NOT NULL,
     song BYTEA NOT NULL,
-    cover BYTEA NOT NULL
+    cover BYTEA NOT NULL,
+    language VARCHAR(50) NOT NULL,
+    genre VARCHAR(50) NOT NULL,
+    mood VARCHAR(50) NOT NULL
 );
 

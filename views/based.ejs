@@ -53,6 +53,18 @@
             box-shadow: 0 4px 60px rgba(0,0,0,.5);
         }
 
+        .mood-emoji i {
+            width: 160px !important;
+            height: 160px !important;
+            stroke-width: 1.2;
+            color: #ffffff;
+        }
+
+        .mood-emoji svg {
+            width: 160px !important;
+            height: 160px !important;
+        }
+
         .mood-details {
             display: flex;
             flex-direction: column;
@@ -365,14 +377,22 @@
         <div class="mood-header">
             <div class="mood-info">
                 <div class="mood-emoji">
-                    <% if (mood === 'happy') { %>😊
-                    <% } else if (mood === 'sad') { %>😢
-                    <% } else if (mood === 'love') { %>❤️
-                    <% } else if (mood === 'energetic') { %>⚡
-                    <% } else if (mood === 'chill') { %>🌿
-                    <% } else if (mood === 'party') { %>🎉
-                    <% } else if (mood === 'focus') { %>🎯
-                    <% } else if (mood === 'workout') { %>💪
+                    <% if (mood === 'love') { %>
+                        <i data-lucide="heart"></i>
+                    <% } else if (mood === 'sad') { %>
+                        <i data-lucide="cloud-rain"></i>
+                    <% } else if (mood === 'happy') { %>
+                        <i data-lucide="sun"></i>
+                    <% } else if (mood === 'energetic') { %>
+                        <i data-lucide="zap"></i>
+                    <% } else if (mood === 'chill') { %>
+                        <i data-lucide="leaf"></i>
+                    <% } else if (mood === 'party') { %>
+                        <i data-lucide="sparkles"></i>
+                    <% } else if (mood === 'focus') { %>
+                        <i data-lucide="target"></i>
+                    <% } else if (mood === 'workout') { %>
+                        <i data-lucide="dumbbell"></i>
                     <% } %>
                 </div>
                 <div class="mood-details">

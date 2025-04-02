@@ -448,13 +448,20 @@ app.get("/admin", async (req, res) => {
 });
 app.post("/add-song", upload.fields([{ name: "song" }, { name: "cover" }]), async (req, res) => {
     try {
-        const { title, artist, duration } = req.body;
+        const { title, artist, duration, language, genre, mood } = req.body;
         const songFile = req.files["song"][0].buffer;
         const coverFile = req.files["cover"][0].buffer;
 
+        // Convert all text fields to lowercase
+        const lowercaseTitle = title.toLowerCase();
+        const lowercaseArtist = artist.toLowerCase();
+        const lowercaseLanguage = language.toLowerCase();
+        const lowercaseGenre = genre.toLowerCase();
+        const lowercaseMood = mood.toLowerCase();
+
         await db.query(
-            "INSERT INTO songs (title, artist, duration, song, cover) VALUES ($1, $2, $3, $4, $5)",
-            [title, artist, duration, songFile, coverFile]
+            "INSERT INTO songs (title, artist, duration, song, cover, language, genre, mood) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
+            [lowercaseTitle, lowercaseArtist, duration, songFile, coverFile, lowercaseLanguage, lowercaseGenre, lowercaseMood]
         );
 
         res.redirect("/admin");
@@ -574,9 +581,10 @@ app.get("/liked-songs", (req, res) => {
 app.get("/play/:title", async (req, res) => {
     try {
         const title = decodeURIComponent(req.params.title);
+        const lowercaseTitle = title.toLowerCase();
         console.log(title);
 
-        const result = await db.query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [title]);
+        const result = await db.query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [lowercaseTitle]);
 
         if (result.rows.length === 0) {
             return res.status(404).send("Song not found");
@@ -690,9 +698,9 @@ app.get("/search", async (req, res) => {
             return res.json([]);
         }
 
-        // Search in songs table by title or artist
+        // Search in songs table by title, artist, language, genre, or mood
         const result = await db.query(
-            "SELECT title, artist, cover FROM songs WHERE LOWER(title) LIKE LOWER($1) OR LOWER(artist) LIKE LOWER($1)",
+            "SELECT title, artist, cover, language, genre, mood FROM songs WHERE LOWER(title) LIKE LOWER($1) OR LOWER(artist) LIKE LOWER($1) OR LOWER(language) LIKE LOWER($1) OR LOWER(genre) LIKE LOWER($1) OR LOWER(mood) LIKE LOWER($1)",
             [`%${query}%`]
         );
 

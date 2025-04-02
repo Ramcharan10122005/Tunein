@@ -47,6 +47,13 @@
         .mood-icon {
             font-size: 2.5em;
             margin-bottom: 10px;
+            color: #b62020;
+        }
+
+        .mood-icon i {
+            width: 48px;
+            height: 48px;
+            stroke-width: 1.5;
         }
 
         .mood-title {
@@ -165,42 +172,58 @@
         <h2 class="section-title">Browse by Mood</h2>
         <div class="moods-grid">
             <div class="mood-card" onclick="redirectToMood('love')">
-                <div class="mood-icon">❤️</div>
+                <div class="mood-icon">
+                    <i data-lucide="heart"></i>
+                </div>
                 <div class="mood-title">Love</div>
                 <div class="mood-description">Romantic and heartfelt tunes</div>
             </div>
             <div class="mood-card" onclick="redirectToMood('sad')">
-                <div class="mood-icon">😢</div>
+                <div class="mood-icon">
+                    <i data-lucide="cloud-rain"></i>
+                </div>
                 <div class="mood-title">Sad</div>
                 <div class="mood-description">Melancholic melodies</div>
             </div>
             <div class="mood-card" onclick="redirectToMood('happy')">
-                <div class="mood-icon">😊</div>
+                <div class="mood-icon">
+                    <i data-lucide="sun"></i>
+                </div>
                 <div class="mood-title">Happy</div>
                 <div class="mood-description">Upbeat and cheerful tracks</div>
             </div>
             <div class="mood-card" onclick="redirectToMood('energetic')">
-                <div class="mood-icon">⚡</div>
+                <div class="mood-icon">
+                    <i data-lucide="zap"></i>
+                </div>
                 <div class="mood-title">Energetic</div>
                 <div class="mood-description">High-energy beats</div>
             </div>
             <div class="mood-card" onclick="redirectToMood('chill')">
-                <div class="mood-icon">🌿</div>
+                <div class="mood-icon">
+                    <i data-lucide="leaf"></i>
+                </div>
                 <div class="mood-title">Chill</div>
                 <div class="mood-description">Relaxing and laid-back vibes</div>
             </div>
             <div class="mood-card" onclick="redirectToMood('party')">
-                <div class="mood-icon">🎉</div>
+                <div class="mood-icon">
+                    <i data-lucide="sparkles"></i>
+                </div>
                 <div class="mood-title">Party</div>
                 <div class="mood-description">Dance and celebration hits</div>
             </div>
             <div class="mood-card" onclick="redirectToMood('focus')">
-                <div class="mood-icon">🎯</div>
+                <div class="mood-icon">
+                    <i data-lucide="target"></i>
+                </div>
                 <div class="mood-title">Focus</div>
                 <div class="mood-description">Productivity-boosting tunes</div>
             </div>
             <div class="mood-card" onclick="redirectToMood('workout')">
-                <div class="mood-icon">💪</div>
+                <div class="mood-icon">
+                    <i data-lucide="dumbbell"></i>
+                </div>
                 <div class="mood-title">Workout</div>
                 <div class="mood-description">Pump-up workout tracks</div>
             </div>

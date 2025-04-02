@@ -30,23 +30,39 @@
         }
 
         form {
-            background: #282828;
+            background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
             padding: 30px;
-            border-radius: 10px;
+            border-radius: 12px;
             display: flex;
             flex-direction: column;
             gap: 15px;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
+        .input-group {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 12px;
+            color: #b62020;
+            width: 20px;
+            height: 20px;
+            stroke-width: 1.5;
+        }
+
         input[type="text"] {
-            padding: 12px;
+            padding: 12px 12px 12px 40px;
             font-size: 16px;
             border: 1px solid #404040;
             border-radius: 5px;
             background: #404040;
             color: #eeecec;
             transition: border-color 0.3s ease;
+            width: 100%;
         }
 
         input[type="text"]:focus {
@@ -54,11 +70,34 @@
             border-color: #b62020;
         }
 
-        input[type="file"] {
-            padding: 10px;
+        .file-input-container {
+            position: relative;
             background: #404040;
+            padding: 15px;
             border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-input-container i {
+            color: #b62020;
+            width: 24px;
+            height: 24px;
+            stroke-width: 1.5;
+        }
+
+        input[type="file"] {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: none;
             color: #eeecec;
+        }
+
+        .file-input-container label {
+            color: #b3b3b3;
+            font-size: 14px;
         }
 
         button[type="submit"] {
@@ -70,10 +109,20 @@
             border-radius: 5px;
             cursor: pointer;
             transition: background-color 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
 
         button[type="submit"]:hover {
             background: #d42a2a;
+        }
+
+        button[type="submit"] i {
+            width: 20px;
+            height: 20px;
+            stroke-width: 1.5;
         }
 
         .songs-list {
@@ -90,13 +139,14 @@
         }
 
         li {
-            background: #282828;
+            background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
             margin: 10px 0;
             padding: 15px;
             border-radius: 5px;
             display: flex;
             align-items: center;
             transition: background-color 0.3s ease;
+            gap: 10px;
         }
 
         li:hover {
@@ -107,14 +157,17 @@
             color: #b62020;
         }
 
-        .file-input-container {
-            position: relative;
+        .song-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
         }
 
-        .file-input-container label {
-            display: block;
-            margin-bottom: 5px;
-            color: #b3b3b3;
+        .song-info i {
+            color: #b62020;
+            width: 20px;
+            height: 20px;
+            stroke-width: 1.5;
         }
     </style>
 </head>
@@ -123,18 +176,44 @@
     <div class="container">
         <h2>Add a New Song</h2>
         <form action="/add-song" method="POST" enctype="multipart/form-data">
-            <input type="text" name="title" placeholder="Song Title" required>
-            <input type="text" name="artist" placeholder="Artist" required>
-            <input type="text" name="duration" placeholder="Duration (e.g., 03:45)" required>
+            <div class="input-group">
+                <i data-lucide="music"></i>
+                <input type="text" name="title" placeholder="Song Title" required>
+            </div>
+            <div class="input-group">
+                <i data-lucide="user"></i>
+                <input type="text" name="artist" placeholder="Artist" required>
+            </div>
+            <div class="input-group">
+                <i data-lucide="clock"></i>
+                <input type="text" name="duration" placeholder="Duration (e.g., 03:45)" required>
+            </div>
+            <div class="input-group">
+                <i data-lucide="globe"></i>
+                <input type="text" name="language" placeholder="Language (e.g., English, Hindi)" required>
+            </div>
+            <div class="input-group">
+                <i data-lucide="music-2"></i>
+                <input type="text" name="genre" placeholder="Genre (e.g., Pop, Rock, Jazz)" required>
+            </div>
+            <div class="input-group">
+                <i data-lucide="heart"></i>
+                <input type="text" name="mood" placeholder="Mood (e.g., Happy, Sad, Energetic)" required>
+            </div>
             <div class="file-input-container">
+                <i data-lucide="music-2"></i>
                 <label>Song File:</label>
                 <input type="file" name="song" required>
             </div>
             <div class="file-input-container">
+                <i data-lucide="image"></i>
                 <label>Cover Image:</label>
                 <input type="file" name="cover" required>
             </div>
-            <button type="submit">Upload Song</button>
+            <button type="submit">
+                <i data-lucide="upload"></i>
+                Upload Song
+            </button>
         </form>
 
         <div class="songs-list">
@@ -142,12 +221,29 @@
             <ul>
                 <% songs.forEach(song=> { %>
                     <li>
-                        <strong><%= song.title %></strong> - <%= song.artist %> (<%= song.duration %>)
+                        <div class="song-info">
+                            <i data-lucide="music"></i>
+                            <strong><%= song.title %></strong>
+                            <i data-lucide="user"></i>
+                            <%= song.artist %>
+                            <i data-lucide="clock"></i>
+                            <%= song.duration %>
+                            <i data-lucide="globe"></i>
+                            <%= song.language %>
+                            <i data-lucide="music-2"></i>
+                            <%= song.genre %>
+                            <i data-lucide="heart"></i>
+                            <%= song.mood %>
+                        </div>
                     </li>
                     <% }); %>
             </ul>
         </div>
     </div>
+
+    <script>
+        lucide.createIcons();
+    </script>
 </body>
 
 </html>
