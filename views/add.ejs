@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Songs - Tune In</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/main.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #121212;
+            color: #eeecec;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        h2 {
+            color: #eeecec;
+            font-family: 'Pacifico', cursive;
+            margin-bottom: 30px;
+        }
+
+        form {
+            background: #282828;
+            padding: 30px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        input[type="text"] {
+            padding: 12px;
+            font-size: 16px;
+            border: 1px solid #404040;
+            border-radius: 5px;
+            background: #404040;
+            color: #eeecec;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #b62020;
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            background: #404040;
+            border-radius: 5px;
+            color: #eeecec;
+        }
+
+        button[type="submit"] {
+            padding: 12px;
+            font-size: 16px;
+            background: #b62020;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        button[type="submit"]:hover {
+            background: #d42a2a;
+        }
+
+        .songs-list {
+            margin-top: 40px;
+        }
+
+        .songs-list h2 {
+            margin-bottom: 20px;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: #282828;
+            margin: 10px 0;
+            padding: 15px;
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            transition: background-color 0.3s ease;
+        }
+
+        li:hover {
+            background: #404040;
+        }
+
+        li strong {
+            color: #b62020;
+        }
+
+        .file-input-container {
+            position: relative;
+        }
+
+        .file-input-container label {
+            display: block;
+            margin-bottom: 5px;
+            color: #b3b3b3;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h2>Add a New Song</h2>
+        <form action="/add-song" method="POST" enctype="multipart/form-data">
+            <input type="text" name="title" placeholder="Song Title" required>
+            <input type="text" name="artist" placeholder="Artist" required>
+            <input type="text" name="duration" placeholder="Duration (e.g., 03:45)" required>
+            <div class="file-input-container">
+                <label>Song File:</label>
+                <input type="file" name="song" required>
+            </div>
+            <div class="file-input-container">
+                <label>Cover Image:</label>
+                <input type="file" name="cover" required>
+            </div>
+            <button type="submit">Upload Song</button>
+        </form>
+
+        <div class="songs-list">
+            <h2>Uploaded Songs</h2>
+            <ul>
+                <% songs.forEach(song=> { %>
+                    <li>
+                        <strong><%= song.title %></strong> - <%= song.artist %> (<%= song.duration %>)
+                    </li>
+                    <% }); %>
+            </ul>
+        </div>
+    </div>
+</body>
+
+</html>

@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Password</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Linking external CSS -->
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script defer src="/script.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <style>
         .logo-text {
@@ -35,13 +36,21 @@
         </div>
         <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo">
         <h2 class="logo-text">TuneIn</h2>
-        <h2>Reset Password</h2>
-        <form action="/reset" method="POST">
+        <h2>Reset password</h2>
+        <form action="/new" method="POST">
             <div class="input-container">
-                <input type="email" id="email" name="email" placeholder=" " required>
-                <label for="email">Email</label>
+                <input type="password" id="password" name="password" placeholder=" " required>
+                <label for="password">Enter new password</label>
+                <span class="toggle-password" onclick="togglePassword('password')">👁</span>
             </div>
-            <button type="submit">Send OTP</button>
+
+            <div class="input-container">
+                <input type="password" id="confirm_password" name="confirm_password" placeholder=" " required>
+                <label for="confirm_password">Confirm new password</label>
+                <span class="toggle-password" onclick="togglePassword('confirm_password')">👁</span>
+            </div>
+
+            <button type="submit">Save</button>
         </form>
     </div>
 </body>
