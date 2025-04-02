@@ -193,14 +193,22 @@
         /* Main Content */
         .main-content {
             margin-left: 250px;
-            /* Space for sidebar */
             padding: 20px;
             flex-grow: 1;
             margin-top: 80px;
-            /* Space for header */
             margin-bottom: 80px;
-            /* Space for music controls */
             width: calc(100% - 250px);
+            transition: all 0.3s;
+        }
+
+        body.sidebar-open .main-content {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .sidebar.closed + .main-content {
+            margin-left: 0;
+            width: 100%;
         }
 
         /* Liked Songs Header */
@@ -515,25 +523,33 @@
             color: white;
         }
 
+        .modal h2 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
         .modal input {
-            width: 100%;
-            padding: 10px;
+            width: calc(100% - 20px);
+            padding: 12px 10px;
             margin: 10px 0;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             background: #333;
             color: white;
+            font-size: 16px;
         }
 
         .modal button {
             background-color: #b62020;
             color: white;
-            padding: 10px 20px;
+            padding: 12px 20px;
             border: none;
-            border-radius: 4px;
+            border-radius: 8px;
             cursor: pointer;
             width: 100%;
             margin-top: 10px;
+            font-size: 16px;
+            font-weight: bold;
         }
 
         .modal button:hover {

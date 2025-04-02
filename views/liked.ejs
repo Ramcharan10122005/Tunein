@@ -193,14 +193,22 @@
         /* Main Content */
         .main-content {
             margin-left: 250px;
-            /* Space for sidebar */
             padding: 20px;
             flex-grow: 1;
             margin-top: 80px;
-            /* Space for header */
             margin-bottom: 80px;
-            /* Space for music controls */
             width: calc(100% - 250px);
+            transition: all 0.3s;
+        }
+
+        body.sidebar-open .main-content {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .sidebar.closed + .main-content {
+            margin-left: 0;
+            width: 100%;
         }
 
         /* Liked Songs Header */
