@@ -77,6 +77,7 @@ app.get(
     (req, res) => {
         if (req.user) {
             req.session.username = req.user.username;
+            req.session.userId = req.user.id;
             console.log("Session after Github auth:", req.session);
         }
         res.redirect('/');
@@ -96,6 +97,7 @@ app.get(
         if (req.user) {
             // Make sure to set the session username
             req.session.username = req.user.username;
+            req.session.userId = req.user.id;
             console.log("Session after Google auth:", req.session); // Add this to debug
         }
         res.redirect('/');
@@ -318,35 +320,6 @@ app.post("/login", (req, res, next) => {
       });
     })(req, res, next);
 });
-// app.post("/login", async (req, res) => {
-//     try {
-//         const { username, password } = req.body;
-//         const user = await db.query("SELECT * FROM users WHERE username = $1", [username]);
-//         if (user.rows.length === 0) {
-//             return res.render("login", {
-//                 error: true,
-//                 errorType: "user-exists" || "",
-//                 errorMessage: "Invalid username",
-//             });
-//         }
-//         const isValidPassword = await bcrypt.compare(password, user.rows[0].password);
-//         if (!isValidPassword) {
-//             return res.render("login", {
-//                 error: true,
-//                 errorType: "user-exists" || "",
-//                 errorMessage: "Invalid Password",
-//             });
-//         }
-//         req.session.authenticated = true;
-//         req.session.username = username;
-//         // req.session.user = { id: user.rows[0].id, username: user.rows[0].username };
-//         res.redirect("/");
-//     }
-//     catch (err) {
-//         console.error(err);
-//         res.status(500).json({ message: "Internal Server Error" });
-//     }
-// })
 // Password Reset
 app.post("/reset", async (req, res) => {
     const email = req.body.email.trim();
@@ -459,6 +432,39 @@ app.get("/dashboard", (req, res) => {
     }
     res.send("Welcome to your dashboard!");
 });
+
+app.get("/like/:title", async (req, res) => {
+    try {
+        if (!req.session || !req.session.userId) {
+            return res.status(401).json({ error: "User not authenticated" });
+        }
+
+        const title = decodeURIComponent(req.params.title);
+        const lowercaseTitle = title.toLowerCase();
+        console.log(title);
+        // ✅ Fixed the WHERE clause
+        const result = await db.query("SELECT id FROM songs WHERE title = $1", [lowercaseTitle]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Song not found" });
+        }
+
+        const songid = result.rows[0].id;
+        const userid = req.session.userId;
+
+        // ✅ Prevents duplicate likes
+        await db.query(
+            "INSERT INTO liked (songid, userid) VALUES ($1, $2) ON CONFLICT DO NOTHING",
+            [songid, userid]
+        );
+
+        res.json({ success: true, message: "Song liked successfully" });
+    } catch (error) {
+        console.error("Error liking song:", error);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
 app.get("/admin", async (req, res) => {
     const result = await db.query("SELECT * FROM songs ORDER BY id DESC");
     res.render("add", { songs: result.rows });
@@ -568,32 +574,92 @@ app.get("/playlists/songs", (req, res) => {
 
 
 app.get("/liked-songs", async (req, res) => {
-    if (!req.isAuthenticated()) {
+    if (!req.session.userId) {
         return res.redirect("/login");
     }
 
-    const userId = req.user.id; // Get user ID from Passport session
-
     try {
-        // Fetch liked songs for the logged-in user from the database
-        const result = await db.query(
-            `SELECT users.id AS userId, users.username, songs.title AS songName, songs.artist 
-             FROM liked 
-             JOIN users ON liked.userid = users.id 
-             JOIN songs ON liked.songid = songs.id 
-             WHERE liked.userid = $1`,
-            [userId]
-        );
+        // Get all liked songs for the current user with song details
+        const result = await db.query(`
+            SELECT 
+                s.id, 
+                s.title, 
+                s.artist, 
+                EXTRACT(HOUR FROM s.duration) AS hours,
+                EXTRACT(MINUTE FROM s.duration) AS minutes,
+                EXTRACT(SECOND FROM s.duration) AS seconds,
+                s.genre, 
+                s.mood,
+                s.cover, 
+                u.username, 
+                l.created_at
+            FROM liked l
+            JOIN songs s ON l.songid = s.id
+            JOIN users u ON l.userid = u.id
+            WHERE l.userid = $1
+            ORDER BY l.created_at DESC
+        `, [req.session.userId]);
 
-        res.render("liked.ejs", {
-            likedSongs: result.rows,
-            loggedInUserId: userId
+        console.log("Liked songs query result:", result.rows); // Debug log
+
+        // Convert cover images to base64 and format duration
+        const likedSongs = result.rows.map(song => ({
+            ...song,
+            cover: song.cover ? `data:image/jpeg;base64,${song.cover.toString('base64')}` : null,
+            duration: formatDuration({
+                hours: song.hours,
+                minutes: song.minutes,
+                seconds: song.seconds
+            })
+        }));
+
+        res.render("liked", {
+            likedSongs: likedSongs,
+            loggedInUserId: req.session.userId,
+            username: req.session.username
         });
-    } catch (error) {
-        console.error("Error fetching liked songs:", error);
-        res.status(500).send("Internal Server Error");
+    } catch (err) {
+        console.error("Error fetching liked songs:", err);
+        res.status(500).send("Error fetching liked songs");
     }
 });
+
+// Helper function to format duration
+function formatDuration(duration) {
+    if (!duration) return "0:00";
+    
+    // If duration is an object with hours, minutes, seconds
+    if (typeof duration === 'object' && duration.hours !== undefined) {
+        const hours = Math.floor(duration.hours) || 0;
+        const minutes = Math.floor(duration.minutes) || 0;
+        const seconds = Math.floor(duration.seconds) || 0;
+        
+        if (hours > 0) {
+            return `${hours}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        } else {
+            return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+        }
+    }
+    
+    // Handle string format like "00:03:59"
+    const parts = duration.toString().split(':');
+    if (parts.length === 3) {
+        const [hours, minutes, seconds] = parts;
+        if (hours === "00") {
+            return `${parseInt(minutes)}:${seconds}`;
+        }
+        return `${parseInt(hours)}:${minutes}:${seconds}`;
+    }
+    
+    // Handle string format like "3:59"
+    if (parts.length === 2) {
+        const [minutes, seconds] = parts;
+        return `${parseInt(minutes)}:${seconds}`;
+    }
+    
+    return "0:00";
+}
+
 app.get("/play/:title", async (req, res) => {
     try {
         const title = decodeURIComponent(req.params.title);

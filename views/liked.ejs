@@ -590,69 +590,55 @@
         </div>
 
         <div class="songs-list-container">
-            <% const tableUserSongs=likedSongs.filter(song=> song.userId === loggedInUserId); %>
-                <% if (tableUserSongs.length> 0) { %>
-                    <table class="songs-list">
-                        <thead>
+            <% if (likedSongs && likedSongs.length > 0) { %>
+                <table class="songs-list">
+                    <thead>
+                        <tr>
+                            <th style="width: 50px">#</th>
+                            <th>TITLE</th>
+                            <th>GENRE</th>
+                            <th>ARTIST</th>
+                            <th>DURATION</th>
+                            <th style="width: 50px"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% likedSongs.forEach((song, index) => { %>
                             <tr>
-                                <th style="width: 50px">#</th>
-                                <th>TITLE</th>
-                                <th>ALBUM</th>
-                                <th>ARTIST</th>
-                                <th style="width: 50px"></th>
+                                <td class="index-number"><%= index + 1 %></td>
+                                <td>
+                                    <div class="song-title-info">
+                                        <div class="song-cover" style="background-image: url('<%= song.cover || '' %>'); background-size: cover; background-position: center;">
+                                        </div>
+                                        <div class="song-details">
+                                            <div class="song-title"><%= song.title %></div>
+                                            <div class="song-artist"><%= song.artist %></div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td><%= song.genre %></td>
+                                <td class="artist"><%= song.artist %></td>
+                                <td class="duration"><%= song.duration %></td>
+                                <td>
+                                    <div class="song-actions">
+                                        <button class="action-btn">⋮</button>
+                                        <div class="action-menu">
+                                            <form action="/remove-liked" method="POST">
+                                                <input type="hidden" name="songId" value="<%= song.id %>">
+                                                <button type="submit">Remove from Liked Songs</button>
+                                            </form>
+                                        </div>
+                                    </div>
+                                </td>
                             </tr>
-                        </thead>
-                        <tbody>
-                            <% tableUserSongs.forEach((song, index)=> { %>
-                                <tr>
-                                    <td class="index-number">
-                                        <%= index + 1 %>
-                                    </td>
-                                    <td>
-                                        <div class="song-title-info">
-                                            <div class="song-cover" style="background-color: #333;">
-                                                <!-- You can use real image if available -->
-                                                <!-- <img src="<%= song.coverUrl %>" alt="<%= song.songName %>" width="40" height="40"> -->
-                                            </div>
-                                            <div class="song-details">
-                                                <div class="song-title">
-                                                    <%= song.songName %>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </td>
-                                    <td>
-                                        <%= song.album || 'Single' %>
-                                    </td>
-                                    <td class="artist">
-                                        <%= song.artist %>
-                                    </td>
-                                    <td>
-                                        <div class="song-actions">
-                                            <button class="action-btn">⋮</button>
-                                            <div class="action-menu">
-                                                <form action="/remove-liked" method="POST">
-                                                    <input type="hidden" name="userId" value="<%= loggedInUserId %>">
-                                                    <input type="hidden" name="songName" value="<%= song.songName %>">
-                                                    <button type="submit">Remove from Liked Songs</button>
-                                                </form>
-                                                <form action="/add-to-playlist" method="POST">
-                                                    <input type="hidden" name="userId" value="<%= loggedInUserId %>">
-                                                    <input type="hidden" name="songName" value="<%= song.songName %>">
-                                                    <button type="submit">Add to playlist</button>
-                                                </form>
-                                            </div>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <% }); %>
-                        </tbody>
-                    </table>
-                    <% } else { %>
-                        <div class="no-songs">
-                            <p>You haven't liked any songs yet. Start exploring and add songs you love!</p>
-                        </div>
-                        <% } %>
+                        <% }); %>
+                    </tbody>
+                </table>
+            <% } else { %>
+                <div class="no-songs">
+                    <p>You haven't liked any songs yet. Start exploring and add songs you love!</p>
+                </div>
+            <% } %>
         </div>
     </div>
 

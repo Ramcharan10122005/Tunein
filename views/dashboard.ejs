@@ -8,6 +8,35 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/main.css">
+    <style>
+        .like-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+            margin: 0;
+        }
+
+        .like-btn i.lucide-heart {
+            stroke: white;
+            fill: none;
+            transition: all 0.3s ease;
+        }
+
+        .like-btn:hover i.lucide-heart {
+            stroke: #b62020;
+        }
+
+        .like-btn[data-liked="true"] i.lucide-heart {
+            stroke: #9E1C1C;
+            fill: #9E1C1C;
+        }
+
+        .like-btn[data-liked="true"] i.lucide-heart path {
+            fill: #9E1C1C;
+            stroke: #9E1C1C;
+        }
+    </style>
 </head>
 
 <body>
@@ -20,7 +49,8 @@
         <div class="search-container">
             <form id="search-form" onsubmit="handleSearch(event)">
                 <i data-lucide="search" class="search-icon"></i>
-                <input type="text" name="query" id="search-input" placeholder="Search songs, playlists..." class="search-bar">
+                <input type="text" name="query" id="search-input" placeholder="Search songs, playlists..."
+                    class="search-bar">
                 <button type="submit" style="display: none;"></button>
             </form>
         </div>
@@ -48,7 +78,7 @@
 
     <div id="search-results" class="search-results" style="display: none;">
         <h2>Search Results</h2>
-        <div class="songs-grid" id="search-results-grid" >
+        <div class="songs-grid" id="search-results-grid">
             <!-- Search results will be populated here -->
         </div>
     </div>
@@ -185,7 +215,7 @@
                     </div>
                 </div>
                 <div class="song">
-                    <img src="/images/song2.jpg" alt="Younger and Hotter">
+                    <img src="/images/song2.webp" alt="Younger and Hotter">
                     <div>
                         <h4>Younger And Hotter Than Me</h4>
                         <p>Selena Gomez, Benny Blanco</p>
@@ -258,7 +288,8 @@
 
         <div class="controls">
             <button><i data-lucide="repeat"></i></button>
-            <button><i data-lucide="heart"></i></button>
+            <button class="like-btn" id="like-btn" data-liked="false" onclick="redirectToLike()"><i
+                    data-lucide="heart"></i></button>
             <div class="volume-container">
                 <button id="volume-btn"><i data-lucide="volume-2"></i></button>
                 <div class="volume-slider" id="volume-slider" style="display: none;left: 1841px;bottom: 52px;">
@@ -281,6 +312,10 @@
             const progressBar = document.getElementById("progress");
             const progressContainer = document.getElementById("progress-container");
             const volumeSlider = document.getElementById("volume-input");
+            const likeBtn = document.getElementById("like-btn");
+            const likeIcon = likeBtn.querySelector("i");
+            const like = document.getElementsByClassName("lucide lucide-heart")
+            // Like button functionality
             playPauseBtn.addEventListener("click", togglePlayPause);
             lucide.createIcons();
             menuBtn.addEventListener("click", function () {
@@ -323,7 +358,6 @@
                     audio.pause();
                 }
             }
-
             function updateProgress() {
                 const progress = (audio.currentTime / audio.duration) * 100;
                 progressBar.style.width = progress + "%";
@@ -365,7 +399,7 @@
             async function handleSearch(event) {
                 event.preventDefault();
                 const query = searchInput.value.trim();
-                
+
                 if (query.length === 0) {
                     searchResults.style.display = 'none';
                     carouselContainer.style.display = 'block';
@@ -375,14 +409,14 @@
                 try {
                     const response = await fetch(`/search?query=${encodeURIComponent(query)}`);
                     const data = await response.json();
-                    
+
                     // Hide carousel and show search results
                     carouselContainer.style.display = 'none';
                     searchResults.style.display = 'block';
-                    
+
                     // Clear previous results
                     searchResultsGrid.innerHTML = '';
-                    
+
                     // Display new results
                     data.forEach(song => {
                         const songElement = document.createElement('div');
@@ -413,6 +447,13 @@
         function redirectToPlay(title) {
             const encodedTitle = encodeURIComponent(title); // Encode spaces & special characters
             window.location.href = `/play/${encodedTitle}`;
+        }
+        function redirectToLike() {
+            const pathname = window.location.pathname; // "/play/Calm%20Down"
+            const title = decodeURIComponent(pathname.split("/").pop()); // "Calm Down"
+            console.log(title);
+            const encodedTitle = encodeURIComponent(title); // Encode spaces & special characters
+            window.location.href = `/like/${encodedTitle}`;
         }
         // Carousel functionality for responsive slides per view
         let currentGroup = 0;
