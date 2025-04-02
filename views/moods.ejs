@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mood-based Music - TuneIn</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/main.css">
+    <style>
+        .moods-container {
+            padding: 20px;
+            margin-left: 0;
+            transition: margin-left 0.3s ease;
+            width: 100%;
+        }
+
+        body.sidebar-open .moods-container {
+            margin-left: 10px;
+            width: calc(100% - 50px);
+        }
+
+        .moods-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+            width:calc(100% - 50px);
+        }
+
+        .mood-card {
+            background: linear-gradient(45deg, #1a1a1a, #2a2a2a);
+            border-radius: 12px;
+            padding: 20px;
+            cursor: pointer;
+            transition: transform 0.3s ease;
+            color: white;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .mood-card:hover {
+            transform: scale(1.05);
+        }
+
+        .mood-icon {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .mood-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .mood-description {
+            font-size: 0.9em;
+            color: #b3b3b3;
+        }
+
+        .section-title {
+            color: white;
+            margin: 20px 0;
+            font-size: 1.8em;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <div class="menu-container">
+            <button class="menu-btn" id="menu-btn"><i data-lucide="list"></i></button>
+            <span class="tunein"><img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo">Tune In</span>
+        </div>
+        <div class="search-container">
+            <form id="search-form" onsubmit="handleSearch(event)">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" name="query" id="search-input" placeholder="Search songs, playlists..." class="search-bar">
+                <button type="submit" style="display: none;"></button>
+            </form>
+        </div>
+        <% if (locals.user) { %>
+            <div class="username-container">
+                <p class="usernam-greet">Welcome,</p>
+                <p class="username-name"><%= locals.user %>!</p>
+            </div>
+        <% } else { %>
+            <div class="sign-in-box" onclick="window.location.href='/login'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-user-round-pen">
+                    <path d="M2 21a8 8 0 0 1 10.821-7.487" />
+                    <path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+                    <circle cx="10" cy="8" r="5" />
+                </svg>
+                <span>Sign In</span>
+            </div>
+        <% } %>
+    </header>
+
+    <div class="sidebar">
+        <ul>
+            <li onclick="redirectTo('home')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-house">
+                    <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+                    <path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg> Home
+            </li>
+            <li onclick="redirectTo('liked-songs')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-heart">
+                    <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                </svg> Liked Songs
+            </li>
+            <li onclick="redirectTo('playlists')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-list-music">
+                    <path d="M21 15V6" />
+                    <path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                    <path d="M12 12H3" />
+                    <path d="M16 6H3" />
+                    <path d="M12 18H3" />
+                </svg> Playlists
+            </li>
+            <li onclick="redirectTo('Mood-based')" class="active">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-smile-plus">
+                    <path d="M22 11v1a10 10 0 1 1-9-10" />
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                    <line x1="9" x2="9.01" y1="9" y2="9" />
+                    <line x1="15" x2="15.01" y1="9" y2="9" />
+                    <path d="M16 5h6" />
+                    <path d="M19 2v6" />
+                </svg> Mood-based
+            </li>
+            <li onclick="redirectTo('premium')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-crown">
+                    <path d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
+                    <path d="M5 21h14" />
+                </svg> Premium
+            </li>
+            <li onclick="redirectTo('profile')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-user-pen">
+                    <path d="M11.5 15H7a4 4 0 0 0-4 4v2" />
+                    <path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+                    <circle cx="10" cy="7" r="4" />
+                </svg> Profile
+            </li>
+        </ul>
+    </div>
+
+    <div class="moods-container">
+        <h2 class="section-title">Browse by Mood</h2>
+        <div class="moods-grid">
+            <div class="mood-card" onclick="redirectToMood('love')">
+                <div class="mood-icon">❤️</div>
+                <div class="mood-title">Love</div>
+                <div class="mood-description">Romantic and heartfelt tunes</div>
+            </div>
+            <div class="mood-card" onclick="redirectToMood('sad')">
+                <div class="mood-icon">😢</div>
+                <div class="mood-title">Sad</div>
+                <div class="mood-description">Melancholic melodies</div>
+            </div>
+            <div class="mood-card" onclick="redirectToMood('happy')">
+                <div class="mood-icon">😊</div>
+                <div class="mood-title">Happy</div>
+                <div class="mood-description">Upbeat and cheerful tracks</div>
+            </div>
+            <div class="mood-card" onclick="redirectToMood('energetic')">
+                <div class="mood-icon">⚡</div>
+                <div class="mood-title">Energetic</div>
+                <div class="mood-description">High-energy beats</div>
+            </div>
+            <div class="mood-card" onclick="redirectToMood('chill')">
+                <div class="mood-icon">🌿</div>
+                <div class="mood-title">Chill</div>
+                <div class="mood-description">Relaxing and laid-back vibes</div>
+            </div>
+            <div class="mood-card" onclick="redirectToMood('party')">
+                <div class="mood-icon">🎉</div>
+                <div class="mood-title">Party</div>
+                <div class="mood-description">Dance and celebration hits</div>
+            </div>
+            <div class="mood-card" onclick="redirectToMood('focus')">
+                <div class="mood-icon">🎯</div>
+                <div class="mood-title">Focus</div>
+                <div class="mood-description">Productivity-boosting tunes</div>
+            </div>
+            <div class="mood-card" onclick="redirectToMood('workout')">
+                <div class="mood-icon">💪</div>
+                <div class="mood-title">Workout</div>
+                <div class="mood-description">Pump-up workout tracks</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // Sidebar functionality
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.querySelector('.sidebar');
+        const body = document.body;
+        const searchInput = document.getElementById('search-input');
+        const moodCards = document.querySelectorAll('.mood-card');
+
+        // Show sidebar by default
+        sidebar.classList.add('open');
+        body.classList.add('sidebar-open');
+
+        // Toggle sidebar
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            body.classList.toggle('sidebar-open');
+        });
+
+        // Real-time search filtering
+        searchInput.addEventListener('input', (e) => {
+            const searchQuery = e.target.value.toLowerCase();
+            
+            moodCards.forEach(card => {
+                const moodTitle = card.querySelector('.mood-title').textContent.toLowerCase();
+                const moodDesc = card.querySelector('.mood-description').textContent.toLowerCase();
+                
+                if (moodTitle.includes(searchQuery) || moodDesc.includes(searchQuery)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        });
+
+        function redirectToMood(mood) {
+            window.location.href = `/based?mood=${encodeURIComponent(mood)}`;
+        }
+
+        function redirectTo(page) {
+            window.location.href = `/${page}`;
+        }
+
+        function handleSearch(event) {
+            event.preventDefault();
+            const query = searchInput.value;
+            // Instead of redirecting, we'll filter the moods
+            const searchQuery = query.toLowerCase();
+            
+            moodCards.forEach(card => {
+                const moodTitle = card.querySelector('.mood-title').textContent.toLowerCase();
+                const moodDesc = card.querySelector('.mood-description').textContent.toLowerCase();
+                
+                if (moodTitle.includes(searchQuery) || moodDesc.includes(searchQuery)) {
+                    card.style.display = 'block';
+                } else {
+                    card.style.display = 'none';
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>

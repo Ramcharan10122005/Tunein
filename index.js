@@ -105,6 +105,153 @@ app.get("/reset", (req, res) => {
         errorMessage: "Invalid Password",
     });
 });
+app.get("/Mood-based",(req,res)=>{
+    res.render("moods.ejs", {
+        user: req.session.username
+    });
+})
+app.get("/based", async (req, res) => {
+    try {
+        const mood = req.query.mood;
+        
+        // Dummy data for testing
+        const dummySongs = {
+            happy: [
+                {
+                    title: "Happy",
+                    artist: "Pharrell Williams",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "happy"
+                },
+                {
+                    title: "Good Vibrations",
+                    artist: "Beach Boys",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "happy"
+                },
+                {
+                    title: "Walking on Sunshine",
+                    artist: "Katrina & The Waves",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "happy"
+                }
+            ],
+            sad: [
+                {
+                    title: "Someone Like You",
+                    artist: "Adele",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "sad"
+                },
+                {
+                    title: "All By Myself",
+                    artist: "Celine Dion",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "sad"
+                }
+            ],
+            love: [
+                {
+                    title: "Perfect",
+                    artist: "Ed Sheeran",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "love"
+                },
+                {
+                    title: "All of Me",
+                    artist: "John Legend",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "love"
+                }
+            ],
+            energetic: [
+                {
+                    title: "Eye of the Tiger",
+                    artist: "Survivor",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "energetic"
+                },
+                {
+                    title: "Stronger",
+                    artist: "Kanye West",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "energetic"
+                }
+            ],
+            chill: [
+                {
+                    title: "Chill Vibes",
+                    artist: "Lofi Artists",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "chill"
+                },
+                {
+                    title: "Relaxation",
+                    artist: "Ambient Music",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "chill"
+                }
+            ],
+            party: [
+                {
+                    title: "Party Rock Anthem",
+                    artist: "LMFAO",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "party"
+                },
+                {
+                    title: "I Gotta Feeling",
+                    artist: "Black Eyed Peas",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "party"
+                }
+            ],
+            focus: [
+                {
+                    title: "Focus Music",
+                    artist: "Study Beats",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "focus"
+                },
+                {
+                    title: "Concentration",
+                    artist: "Brain Waves",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "focus"
+                }
+            ],
+            workout: [
+                {
+                    title: "Workout Mix",
+                    artist: "Fitness Beats",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "workout"
+                },
+                {
+                    title: "Pump It Up",
+                    artist: "Workout Artists",
+                    cover: Buffer.from("dummy_cover_data"),
+                    mood: "workout"
+                }
+            ]
+        };
+
+        // Get songs based on mood from dummy data
+        const songs = dummySongs[mood] || [];
+        
+        res.render("based.ejs", {
+            songs: songs,
+            mood: mood,
+            user: req.session.username
+        });
+    } catch (err) {
+        console.error("Error fetching mood-based songs:", err);
+        res.status(500).render("error", {
+            message: "Error loading mood-based songs",
+            user: req.session.username
+        });
+    }
+});
 app.post("/signup", async (req, res) => {
     try {
         const { username, email, password } = req.body;
