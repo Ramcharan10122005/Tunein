@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile | Tune In</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0f0f0f;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Header Styles */
+        header {
+            background: #181818;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1000;
+        }
+
+        .menu-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .tunein {
+            font-family: 'Pacifico', cursive;
+            font-size: 24px;
+            color: white;
+            text-decoration: none;
+        }
+
+        .search-container {
+            flex: 1;
+            max-width: 600px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .search-bar {
+            width: 100%;
+            padding: 10px 40px;
+            background: #282828;
+            border: none;
+            border-radius: 20px;
+            color: white;
+            font-size: 14px;
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            top: 0;
+            left: -250px;
+            width: 250px;
+            height: 100vh;
+            background: #181818;
+            transition: left 0.3s ease;
+            z-index: 999;
+            padding-top: 60px;
+        }
+
+        .sidebar.open {
+            left: 0;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar li {
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #b3b3b3;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .sidebar li:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar li.active {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar li i {
+            width: 20px;
+            height: 20px;
+            stroke: #b62020;
+        }
+
+        .sidebar li a {
+            text-decoration: none;
+            color: inherit;
+            font-size: 16px;
+            font-weight: 500;
+        }
+
+        /* Main Content Styles */
+        .main-content {
+            margin-left: 0;
+            padding: 80px 20px 20px;
+            transition: margin-left 0.3s ease;
+        }
+
+        .main-content.sidebar-open {
+            margin-left: 250px;
+        }
+
+        .profile-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .profile-header {
+            background: linear-gradient(to right, #181818, #282828);
+            padding: 30px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .profile-header h2 {
+            font-size: 32px;
+            margin: 0;
+            background: linear-gradient(to right, #b62020, #ff3b30);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: #282828;
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 36px;
+            font-weight: bold;
+            color: #b62020;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #b3b3b3;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 14px;
+        }
+
+        .profile-section {
+            background: #282828;
+            padding: 30px;
+            border-radius: 12px;
+        }
+
+        .profile-section h3 {
+            margin: 0 0 20px;
+            font-size: 24px;
+            color: white;
+            border-bottom: 2px solid #b62020;
+            padding-bottom: 10px;
+            display: inline-block;
+        }
+
+        .username-edit {
+            margin-bottom: 30px;
+        }
+
+        .username-edit label {
+            display: block;
+            margin-bottom: 10px;
+            color: #b3b3b3;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .username-edit input {
+            background: #333;
+            border: 1px solid #444;
+            padding: 12px;
+            border-radius: 6px;
+            color: white;
+            width: 300px;
+            margin-right: 10px;
+        }
+
+        button {
+            background: #b62020;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background 0.3s ease;
+        }
+
+        button:hover {
+            background: #9e1c1c;
+        }
+
+        .logout-btn {
+            background: transparent;
+            color: #b3b3b3;
+            border: 1px solid #b3b3b3;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: white;
+        }
+
+        .logout-btn i {
+            width: 16px;
+            height: 16px;
+            stroke: currentColor;
+        }
+
+        .profile-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .profile-info p {
+            background: #333;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 0;
+        }
+
+        .profile-info strong {
+            display: block;
+            color: #b3b3b3;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .search-container {
+                display: none;
+            }
+            
+            .username-edit input {
+                width: 100%;
+            }
+
+            .profile-info {
+                grid-template-columns: 1fr;
+            }
+
+            .main-content.sidebar-open {
+                margin-left: 0;
+            }
+        }
+
+        /* User Container Styles */
+        .user-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #282828;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .user-container:hover {
+            background: #333;
+        }
+
+        .user-avatar {
+            width: 28px;
+            height: 28px;
+            background: #b62020;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 14px;
+        }
+
+        .user-name {
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="menu-container">
+            <button class="menu-btn" id="menu-btn">
+                <i data-lucide="menu" style="color: white;"></i>
+            </button>
+            <span class="tunein">Tune In</span>
+        </div>
+        <div class="search-container">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" class="search-bar" placeholder="Search songs, playlists...">
+        </div>
+        <% if (typeof user !== 'undefined' && user) { %>
+            <div class="user-container" onclick="window.location.href='/profile'">
+                <div class="user-avatar">
+                    <%= user.username.charAt(0).toUpperCase() %>
+                </div>
+                <span class="user-name"><%= user.username %></span>
+            </div>
+        <% } else { %>
+            <button class="sign-in-btn" onclick="window.location.href='/login'" style="background: #b62020; padding: 8px 16px; border-radius: 4px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+                Sign In
+            </button>
+        <% } %>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <ul>
+            <li onclick="window.location.href='/'">
+                <i data-lucide="home"></i>
+                Home
+            </li>
+            <li onclick="window.location.href='/liked-songs'">
+                <i data-lucide="heart"></i>
+                Liked Songs
+            </li>
+            <li onclick="window.location.href='/playlists'">
+                <i data-lucide="list-music"></i>
+                Playlists
+            </li>
+            <li onclick="window.location.href='/Mood-based'">
+                <i data-lucide="smile"></i>
+                Mood-based
+            </li>
+            <li onclick="window.location.href='/premium'">
+                <i data-lucide="crown"></i>
+                Premium
+            </li>
+            <li class="active" onclick="window.location.href='/profile'">
+                <i data-lucide="user"></i>
+                Profile
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="profile-container">
+            <div class="profile-header">
+                <h2>Your Profile</h2>
+                <button class="logout-btn" onclick="handleLogout()">
+                    <i data-lucide="log-out"></i>
+                    Sign Out
+                </button>
+            </div>
+
+            <% if (typeof error !== 'undefined' && error) { %>
+                <div class="error-message">
+                    <%= error === 'username_taken' ? 'Username already taken' : 'Error updating username' %>
+                </div>
+            <% } %>
+            <% if (typeof success !== 'undefined' && success) { %>
+                <div class="success-message">Username updated successfully!</div>
+            <% } %>
+
+            <div class="stats-container">
+                <div class="stat-card">
+                    <div class="stat-number"><%= typeof likedSongsCount !== 'undefined' ? likedSongsCount : 0 %></div>
+                    <div class="stat-label">Liked Songs</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number"><%= typeof playlistsCount !== 'undefined' ? playlistsCount : 0 %></div>
+                    <div class="stat-label">Playlists</div>
+                </div>
+            </div>
+
+            <div class="profile-section">
+                <h3>Account Details</h3>
+                <form id="usernameForm" action="/update-username" method="POST">
+                    <div class="username-edit">
+                        <label>Username</label>
+                        <div style="display: flex; gap: 10px;">
+                            <input type="text" name="newUsername" value="<%= user.username %>" required>
+                            <button type="submit">
+                                <i data-lucide="check"></i>
+                                Update
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="profile-info">
+                    <p>
+                        <strong>Email</strong>
+                        <%= user.email %>
+                    </p>
+                    <p>
+                        <strong>Member Since</strong>
+                        <%= new Date(user.created_at).toLocaleDateString() %>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Handle sidebar toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.querySelector('.main-content');
+
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            mainContent.classList.toggle('sidebar-open');
+        });
+
+        // Handle search
+        const searchInput = document.querySelector('.search-bar');
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                const query = searchInput.value;
+                window.location.href = `/search?query=${encodeURIComponent(query)}`;
+            }
+        });
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!sidebar.contains(event.target) && !menuBtn.contains(event.target) && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                mainContent.classList.remove('sidebar-open');
+            }
+        });
+
+        // Handle logout with confirmation
+        function handleLogout() {
+            if (confirm('Are you sure you want to sign out?')) {
+                window.location.href = '/logout';
+            }
+        }
+    </script>
+</body>
+</html>
