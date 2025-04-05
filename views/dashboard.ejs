@@ -290,13 +290,18 @@
             <button><i data-lucide="repeat"></i></button>
             <button class="like-btn" id="like-btn" data-liked="false" onclick="redirectToLike()"><i
                     data-lucide="heart"></i></button>
-            <div class="volume-container">
-                <button id="volume-btn"><i data-lucide="volume-2"></i></button>
-                <div class="volume-slider" id="volume-slider" style="display: none;left: 1841px;bottom: 52px;">
-                    <input type="range" id="volume-input" min="0" max="100" value="50">
+            <div class="controls">
+                <button><i data-lucide="repeat"></i></button>
+                <button class="like-btn" id="like-btn" data-liked="false"><i data-lucide="heart"></i></button>
+                <div class="volume-container">
+                    <button id="volume-btn"><i data-lucide="volume-2"></i></button>
+                    <div class="volume-slider" id="volume-slider" style="bottom: 140px;left:-100px;">
+                        <input type="range" id="volume-input" min="0" max="100" value="50">
+                    </div>
                 </div>
             </div>
         </div>
+    </div>
     </div>
 
     </div>
@@ -345,6 +350,7 @@
             volumeSlider.addEventListener("input", function () {
                 let volume = this.value / 100;
                 audio.volume = volume;
+                updateVolumeSlider(value);
                 console.log("Volume: ", volume);
             });
             // Sidebar is hidden by default now
@@ -366,7 +372,6 @@
             function setVolume() {
                 audio.volume = volumeSlider.value / 100;
             }
-
 
             // Initialize carousel
             initCarousel();
@@ -437,7 +442,12 @@
                 }
             }
         });
-
+        function updateVolumeSlider(value) {
+                const slider = document.querySelector('.volume-slider');
+                if (slider) {
+                    slider.style.setProperty('--volume-height', `${value}%`);
+                }
+            }
         function redirectTo(pageName) {
             // For demo purposes just log the navigation
             // console.log(`Navigating to: ${pageName}`);

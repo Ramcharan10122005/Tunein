@@ -289,24 +289,27 @@
         .song-cover {
             width: 40px;
             height: 40px;
-            margin-right: 16px;
             background-size: cover;
             background-position: center;
+            margin-right: 16px;
+            border-radius: 4px;
         }
 
         .song-details {
             display: flex;
             flex-direction: column;
+            justify-content: center;
         }
 
         .song-title {
-            font-weight: bold;
             color: white;
+            font-size: 14px;
+            margin-bottom: 4px;
         }
 
         .song-artist {
-            font-size: 14px;
             color: #b3b3b3;
+            font-size: 12px;
         }
 
         .duration {
@@ -366,37 +369,54 @@
             background: #333;
         }
 
-        /* Full-Width Music Bar */
+        /* Music Controls */
         .music-controls {
             position: fixed;
             bottom: 0;
             width: 100%;
             background: #181818;
-            padding: 15px;
+            z-index: 999;
+            padding: 16px 24px;
             display: flex;
-            justify-content: space-between;
             align-items: center;
             box-sizing: border-box;
-            z-index: 5;
             border-top: 1px solid #333;
+            transition: none !important;
+            left: 0 !important;
+            margin: 0 !important;
+            height: 90px;
+            gap: 16px;
         }
 
         .track-info {
             display: flex;
             align-items: center;
-            flex: 1;
-            padding-left: 20px;
-            max-width: 300px;
+            width: 300px;
         }
 
         .track-info svg {
+            width: 38px;
+            height: 38px;
             margin-right: 12px;
+        }
+
+        #track-name {
+            color: #fff;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        #artist-name {
+            color: #b3b3b3;
+            font-size: 12px;
         }
 
         .controls {
             display: flex;
             align-items: center;
-            gap: 20px;
+            gap: 32px;
+            justify-content: center;
+            padding-right: 20px;
         }
 
         .controls button {
@@ -408,12 +428,13 @@
         }
 
         .progress-bar {
-            flex: 1;
-            height: 5px;
+            flex: 2;
+            height: 6px;
             background: #333;
             border-radius: 5px;
-            margin: 0 20px;
+            margin: 0;
             position: relative;
+            overflow: hidden;
         }
 
         .progress-bar span {
@@ -422,31 +443,123 @@
             width: 0%;
             background: #b62020;
             border-radius: 5px;
-        }
-
-        .volume-container {
-            position: relative;
+            transition: width 0.1s linear;
         }
 
         .volume-slider {
             position: absolute;
-            left: 50%;
+            left: -48px;
             bottom: 40px;
-            transform: translateX(-50%);
+            width: 120px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 2px;
+            transform: rotate(-90deg);
+            transform-origin: bottom right;
             display: none;
-            width: 5px;
-            height: 80px;
-            background: #ccc;
-            border-radius: 5px;
-            cursor: pointer;
+            z-index: 9999;
+            bottom: 100%;
+            margin-bottom: 12px;
         }
 
-        .volume-slider input {
-            transform: rotate(-90deg);
-            width: 80px;
+        .volume-slider::before {
+            content: '';
             position: absolute;
-            left: -37px;
-            top: 30px;
+            left: 0;
+            top: 0;
+            width: var(--volume-percent, 50%);
+            height: 100%;
+            background: #b62020;
+            border-radius: 2px;
+        }
+
+        .volume-slider input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            left: 0;
+            top: 0;
+            margin: 0;
+            background: transparent;
+            cursor: pointer;
+            z-index: 10000;
+        }
+
+        .volume-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            margin-top: -4px;
+        }
+
+        .volume-slider input[type="range"]::-webkit-slider-runnable-track {
+            width: 100%;
+            height: 4px;
+            background: transparent;
+            border: none;
+            border-radius: 2px;
+        }
+
+        .volume-container {
+            position: relative;
+            display: flex;
+            align-items: center;
+            height: 32px;
+        }
+
+        .volume-container button {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            padding: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1;
+        }
+
+        .volume-container button:hover {
+            color: #fff;
+        }
+
+        .volume-container button i {
+            width: 20px;
+            height: 20px;
+        }
+
+        .song-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 4px;
+            object-fit: cover;
+            margin-right: 10px;
+        }
+
+        body.sidebar-open .music-controls {
+            width: 100%;
+            margin-left: 0;
+            margin-right: 0;
+        }
+
+        .like-btn {
+            color: #b3b3b3;
+            transition: color 0.3s;
+        }
+
+        .like-btn[data-liked="true"] {
+            color: #b62020;
+        }
+
+        .like-btn:hover {
+            color: #b62020;
         }
 
         .date-added {
@@ -656,7 +769,7 @@
                     </thead>
                     <tbody>
                         <% likedSongs.forEach((song, index)=> { %>
-                            <tr>
+                            <tr onclick="play('<%= song.title %>')">
                                 <td class="index-number">
                                     <%= index + 1 %>
                                 </td>
@@ -709,47 +822,115 @@
 
     <div class="music-controls">
         <div class="track-info">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                class="lucide lucide-music">
-                <path d="M9 18V5l12-2v13" />
-                <circle cx="6" cy="18" r="3" />
-                <circle cx="18" cy="16" r="3" />
-            </svg>
+            <div id="song-image-container">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-music" id="default-music-icon">
+                    <path d="M9 18V5l12-2v13" />
+                    <circle cx="6" cy="18" r="3" />
+                    <circle cx="18" cy="16" r="3" />
+                </svg>
+                <img src="" alt="Song Image" class="song-icon" id="song-cover" style="display: none;">
+            </div>
             <div>
                 <div id="track-name">Song Name</div>
-                <div style="font-size: 12px; color: #b3b3b3;">Artist Name</div>
+                <div id="artist-name" style="font-size: 12px; color: #b3b3b3;">Artist Name</div>
             </div>
         </div>
 
         <div class="controls">
+            <audio id="audio-player">
+                <source id="audio-source" src="" type="audio/mpeg">
+                Your browser does not support the audio tag.
+            </audio>
             <button id="prev"><i data-lucide="skip-back"></i></button>
-            <button id="play-pause"><i data-lucide="play"></i></button>
+            <button id="play-pause">
+                <i id="play-icon" data-lucide="play"></i>
+            </button>
             <button id="next"><i data-lucide="skip-forward"></i></button>
         </div>
-        <div class="progress-bar"><span id="progress"></span></div>
+
+        <div class="progress-bar" id="progress-container">
+            <span id="progress"></span>
+        </div>
+
         <div class="controls">
             <button><i data-lucide="repeat"></i></button>
-            <button><i data-lucide="heart"></i></button>
+            <button class="like-btn" id="like-btn" data-liked="false"><i data-lucide="heart"></i></button>
             <div class="volume-container">
                 <button id="volume-btn"><i data-lucide="volume-2"></i></button>
-                <div class="volume-slider" id="volume-slider"><input type="range" min="0" max="100" value="50"></div>
+                <div class="volume-slider" id="volume-slider" style="bottom: 140px;left:-100px;">
+                    <input type="range" id="volume-input" min="0" max="100" value="50">
+                </div>
             </div>
         </div>
     </div>
 
     <script>
+        let audio, playIcon, progressBar, volumeSlider;
+
         document.addEventListener("DOMContentLoaded", function () {
             const menuBtn = document.getElementById("menu-btn");
             const sidebar = document.querySelector(".sidebar");
+            audio = document.getElementById("audio-player");
+            const playPauseBtn = document.getElementById("play-pause");
+            playIcon = document.getElementById("play-icon");
+            progressBar = document.getElementById("progress");
+            const progressContainer = document.getElementById("progress-container");
+            volumeSlider = document.getElementById("volume-input");
+            const volumeBtn = document.getElementById("volume-btn");
+            const volumeContainer = document.getElementById("volume-slider");
+
+            // Initialize audio player
+            if (audio) {
+                // Add event listeners for audio player
+                audio.addEventListener("timeupdate", updateProgress);
+                audio.addEventListener("ended", () => {
+                    playIcon.setAttribute("data-lucide", "play");
+                    lucide.createIcons();
+                });
+
+                // Initialize volume
+                if (volumeSlider) {
+                    volumeSlider.addEventListener("input", setVolume);
+                    audio.volume = volumeSlider.value / 100;
+                }
+
+                // Add click event for progress bar
+                progressContainer.addEventListener("click", (e) => {
+                    const rect = progressContainer.getBoundingClientRect();
+                    const pos = (e.clientX - rect.left) / rect.width;
+                    audio.currentTime = pos * audio.duration;
+                });
+
+                // Add play/pause button click handler
+                playPauseBtn.addEventListener("click", togglePlayPause);
+            }
+
+            // Volume slider toggle
+            volumeBtn.addEventListener("click", (e) => {
+                e.stopPropagation();
+                if (volumeSlider.style.display === 'block') {
+                    volumeSlider.style.display = 'none';
+                } else {
+                    volumeSlider.style.display = 'block';
+                }
+            });
+
+            // Close volume slider when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!volumeSlider.contains(e.target) && e.target !== volumeBtn) {
+                    volumeSlider.style.display = 'none';
+                }
+            });
+
+            // Prevent clicks on the slider from closing it
+            volumeSlider.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
 
             menuBtn.addEventListener("click", function () {
                 sidebar.classList.toggle("closed");
-            });
-
-            document.getElementById('volume-btn').addEventListener('click', () => {
-                const slider = document.getElementById('volume-slider');
-                slider.style.display = slider.style.display === 'block' ? 'none' : 'block';
             });
 
             // Simulate hover effect for song actions
@@ -776,12 +957,149 @@
 
             lucide.createIcons();
         });
+
+        function togglePlayPause() {
+            const playIcon = document.getElementById("play-icon");
+            if (audio.paused) {
+                audio.play().catch(error => {
+                    console.error("Error playing audio:", error);
+                });
+                playIcon.setAttribute("data-lucide", "pause");
+            } else {
+                audio.pause();
+                playIcon.setAttribute("data-lucide", "play");
+            }
+            lucide.createIcons();
+        }
+
+        function updateProgress() {
+            if (audio && progressBar) {
+                const progress = (audio.currentTime / audio.duration) * 100;
+                progressBar.style.width = progress + "%";
+            }
+        }
+
+        function setVolume() {
+            if (audio && volumeSlider) {
+                audio.volume = volumeSlider.value / 100;
+            }
+        }
+
         function redirectTo(pageName) {
-            // For demo purposes just log the navigation
-            // console.log(`Navigating to: ${pageName}`);
-            // In production this would be:
             window.location.href = `/${pageName}`;
         }
+
+        function play(title) {
+            // Get the song details from the clicked row
+            const row = event.currentTarget;
+            const cover = row.querySelector('.song-cover').style.backgroundImage.slice(4, -1).replace(/"/g, "");
+            const songTitle = row.querySelector('.song-title').textContent.trim();
+            const artist = row.querySelector('.song-artist').textContent.trim();
+            
+            // Update track info
+            document.getElementById("track-name").textContent = songTitle;
+            document.getElementById("artist-name").textContent = artist;
+            
+            // Update song image and play icon immediately
+            const songIcon = document.getElementById('song-cover');
+            const defaultIcon = document.getElementById('default-music-icon');
+            const playIcon = document.getElementById('play-icon');
+            
+            songIcon.src = cover;
+            songIcon.alt = songTitle;
+            songIcon.style.display = 'block';
+            defaultIcon.style.display = 'none';
+            
+            // Change to pause icon immediately
+            playIcon.setAttribute("data-lucide", "pause");
+            lucide.createIcons();
+            
+            // Fetch the song data and update audio player
+            fetch(`/song/${encodeURIComponent(title)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Update audio source
+                    audio.src = data.audio;
+                    audio.load();
+                    
+                    // Start playing
+                    audio.play().catch(error => {
+                        console.error("Error playing audio:", error);
+                        // Reset to play icon if there's an error
+                        playIcon.setAttribute("data-lucide", "play");
+                        lucide.createIcons();
+                    });
+                })
+                .catch(error => {
+                    console.error("Error fetching song:", error);
+                    alert("Error playing song. Please try again.");
+                    // Reset to play icon if there's an error
+                    playIcon.setAttribute("data-lucide", "play");
+                    lucide.createIcons();
+                });
+        }
+
+        function updateVolumeSlider(value) {
+            const slider = document.querySelector('.volume-slider');
+            if (slider) {
+                slider.style.setProperty('--volume-height', `${value}%`);
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const volumeInput = document.getElementById('volume-input');
+            if (volumeInput) {
+                volumeInput.addEventListener('input', function() {
+                    const value = this.value;
+                    updateVolumeSlider(value);
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const volumeBtn = document.getElementById('volume-btn');
+            const volumeSlider = document.getElementById('volume-slider');
+            const volumeInput = document.getElementById('volume-input');
+            const audio = document.getElementById('audio-player');
+
+            // Initialize volume
+            audio.volume = volumeInput.value / 100;
+            volumeSlider.style.setProperty('--volume-percent', `${volumeInput.value}%`);
+
+            // Volume slider toggle
+            volumeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                volumeSlider.style.display = volumeSlider.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Update volume on input change
+            volumeInput.addEventListener('input', function() {
+                const value = this.value;
+                audio.volume = value / 100;
+                volumeSlider.style.setProperty('--volume-percent', `${value}%`);
+            });
+
+            // Close volume slider when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!volumeSlider.contains(e.target) && e.target !== volumeBtn) {
+                    volumeSlider.style.display = 'none';
+                }
+            });
+
+            // Prevent slider clicks from closing
+            volumeSlider.addEventListener('click', (e) => {
+                e.stopPropagation();
+            });
+        });
     </script>
 </body>
 

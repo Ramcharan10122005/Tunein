@@ -383,85 +383,146 @@ app.post("/add-song", upload.fields([{ name: "song" }, { name: "cover" }]), asyn
     }
 });
 // Route for playlist 
-app.get("/playlists", (req, res) => {
-    const loggedInUser = req.user || { userId: 5, username: "ijk" }; // Temporary hardcoded user
-
-    if (!loggedInUser) {
+app.get("/playlists", async(req, res) => {
+    if (!req.session.userId) {
         return res.redirect("/login");
     }
 
-    const loggedInUserId = loggedInUser.userId; // ✅ Define it before using
-
-    const playlists = [
-        { userId: 5, username: "ijk", name: "Chill Vibes", songs: ["Industry Baby", "Good 4 U", "Sunflower", "Blinding Lights", "Save Your Tears", "Levitating"] },
-        { userId: 5, username: "ijk", name: "Workout", songs: ["Starboy", "Uptown Funk", "Stronger", "Can't Hold Us", "Till I Collapse", "Eye of the Tiger"] },
-        { userId: 5, username: "ijk", name: "Top Hits", songs: ["Blinding Lights", "Shape of You", "Believer", "Dance Monkey"] }
-    ];
-
-
-
-    res.render("playlist.ejs", { user: req.session.username, playlists, loggedInUserId });
+    try {
+        const userId = req.session.userId;
+        const playlistsResult = await db.query("SELECT * FROM playlists WHERE user_id = $1", [userId]);
+        
+        // Format playlists data for the template
+        const playlists = playlistsResult.rows.map(playlist => {
+            return {
+                userId: playlist.user_id,
+                username: req.session.username,
+                name: playlist.playlist_name,
+                songs: [] // You might want to fetch songs for each playlist here
+            };
+        });
+        
+        res.render("playlist.ejs", { 
+            user: req.session.username, 
+            playlists: playlists, 
+            loggedInUserId: userId 
+        });
+    } catch (error) {
+        console.error("Error fetching playlists:", error);
+        res.status(500).send("Error fetching playlists");
+    }
 });
 
-
+app.post("/create-playlist", async(req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+    }
+    const name=req.body.playlistName;
+    await db.query("INSERT INTO playlists (playlist_name, user_id) VALUES ($1, $2)", [name, req.session.userId]);
+    res.redirect("/playlists");
+})
 // Route to display songs in a playlist
-app.get("/playlists/songs", (req, res) => {
-    const playlistName = req.query.name;  // Use req.query to get the playlist name from query string
-    const loggedInUserId = req.session.userId || 5;
-    const playlists = [
-        {
-            userId: 5,
-            username: "ijk",
-            name: "Chill Vibes",
-            songs: [
-                { name: "Industry Baby", artist: "Lil Nas X" },
-                { name: "Good 4 U", artist: "Olivia Rodrigo" },
-                { name: "Sunflower", artist: "Post Malone" },
-                { name: "Blinding Lights", artist: "The Weeknd" },
-                { name: "Save Your Tears", artist: "The Weeknd" },
-                { name: "Levitating", artist: "Dua Lipa" }
-            ]
-        },
-        {
-            userId: 5,
-            username: "ijk",
-            name: "Workout",
-            songs: [
-                { name: "Starboy", artist: "The Weeknd" },
-                { name: "Uptown Funk", artist: "Bruno Mars" },
-                { name: "Stronger", artist: "Kanye West" },
-                { name: "Can't Hold Us", artist: "Macklemore" },
-                { name: "Till I Collapse", artist: "Eminem" },
-                { name: "Eye of the Tiger", artist: "Survivor" }
-            ]
-        },
-        {
-            userId: 5,
-            username: "ijk",
-            name: "Top Hits",
-            songs: [
-                { name: "Blinding Lights", artist: "The Weeknd" },
-                { name: "Shape of You", artist: "Ed Sheeran" },
-                { name: "Believer", artist: "Imagine Dragons" },
-                { name: "Dance Monkey", artist: "Tones and I" }
-            ]
-        }
-    ];
-
-
-    // Find the playlist with the matching name
-    const selectedPlaylist = playlists.find(playlist => playlist.name === playlistName);
-
-    if (!selectedPlaylist) {
-        return res.status(404).send("Playlist not found");
+app.get("/playlists/songs", async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect("/login");
     }
 
-    res.render("playlist_songs", { playlist: selectedPlaylist, playlists: playlists, loggedInUserId: loggedInUserId });
+    const playlistName = req.query.name;
+    const loggedInUserId = req.session.userId;
 
+    try {
+        // Fetch all playlists and their songs for the logged-in user
+        const playlistsResult = await db.query(`
+            SELECT 
+                p.id AS playlist_id,
+                p.playlist_name AS playlist_name,
+                p.user_id,
+                u.username,
+                s.title AS song_title,
+                s.artist
+            FROM playlists p
+            JOIN users u ON p.user_id = u.id
+            LEFT JOIN playlists ps ON ps.id = p.id
+            LEFT JOIN songs s ON s.id = ps.song_id
+            WHERE p.user_id = $1
+            ORDER BY p.playlist_name
+        `, [loggedInUserId]);
+
+        // Organize data
+        const playlistsMap = new Map();
+
+        playlistsResult.rows.forEach(row => {
+            const key = row.playlist_name;
+
+            if (!playlistsMap.has(key)) {
+                playlistsMap.set(key, {
+                    userId: row.userid,
+                    username: row.username,
+                    name: row.playlist_name,
+                    songs: []
+                });
+            }
+
+            if (row.song_title && row.artist) {
+                playlistsMap.get(key).songs.push({
+                    name: row.song_title,
+                    artist: row.artist
+                });
+            }
+        });
+
+        const playlists = Array.from(playlistsMap.values());
+
+        // Find selected playlist
+        const selectedPlaylist = playlists.find(p => p.name === playlistName);
+
+        if (!selectedPlaylist) {
+            return res.status(404).send("Playlist not found");
+        }
+
+        res.render("playlist_songs", {
+            playlist: selectedPlaylist,
+            playlists: playlists,
+            loggedInUserId: loggedInUserId
+        });
+
+    } catch (error) {
+        console.error("Error retrieving playlists:", error);
+        res.status(500).send("Internal Server Error");
+    }
 });
+
 // liked songs (Authenticated Route)
 
+app.get("/song/:title", async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+    }
+    try {
+        const title = decodeURIComponent(req.params.title);
+        const lowercaseTitle = title.toLowerCase();
+        console.log(title); 
+        const result = await db.query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [lowercaseTitle]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "Song not found" });
+        }
 
+        const songdet = result.rows[0];
+        const imageBase64 = `data:image/jpeg;base64,${songdet.cover.toString("base64")}`;
+        const audioBase64 = `data:audio/mpeg;base64,${songdet.song.toString("base64")}`;
+
+        res.json({
+            title: songdet.title,
+            artist: songdet.artist,
+            image: imageBase64,
+            audio: audioBase64
+        });
+    } catch (err) {
+        console.error("Error fetching song:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
 app.get("/liked-songs", async (req, res) => {
     if (!req.session.userId) {
         return res.redirect("/login");
@@ -489,7 +550,6 @@ app.get("/liked-songs", async (req, res) => {
             ORDER BY l.created_at DESC
         `, [req.session.userId]);
 
-        console.log("Liked songs query result:", result.rows); // Debug log
 
         // Convert cover images to base64 and format duration
         const likedSongs = result.rows.map(song => ({

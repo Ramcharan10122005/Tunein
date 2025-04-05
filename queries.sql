@@ -47,4 +47,13 @@ CREATE TABLE playlist_songs (
     CONSTRAINT fk_song_playlist FOREIGN KEY (songid) REFERENCES songs(id) ON DELETE CASCADE,
     UNIQUE(playlistid, songid) -- Prevents duplicate songs in a playlist
 );
+CREATE TABLE playlists (
+    id SERIAL PRIMARY KEY,
+    playlist_name TEXT NOT NULL,
+    user_id INTEGER NOT NULL,
+    song_id INTEGER
+);
+
+
+
 
