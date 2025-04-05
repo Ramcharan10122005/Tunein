@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Dashboard</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #0f0f0f;
+            color: white;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100%;
+            background: #181818;
+            transition: transform 0.3s;
+            padding-top: 60px;
+            transform: translateX(0);
+            z-index: 2;
+            overflow-y: auto;
+        }
+
+        .sidebar.closed {
+            transform: translateX(-250px);
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 60px 0 0 0;
+            margin: 0;
+        }
+
+        .sidebar ul li {
+            padding: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar ul li:hover {
+            background: #282828;
+        }
+
+        /* Sidebar playlist items */
+        .sidebar-playlists {
+            margin-top: 20px;
+            padding: 0 15px;
+        }
+
+        .sidebar-playlist-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            cursor: pointer;
+        }
+
+        .sidebar-playlist-item img,
+        .sidebar-playlist-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-playlist-details {
+            overflow: hidden;
+        }
+
+        .sidebar-playlist-title {
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-playlist-subtitle {
+            font-size: 12px;
+            color: #b3b3b3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Header and Search Bar */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #181818;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 3;
+            height: 50px;
+        }
+
+        .menu-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: white;
+            margin-left: 20px;
+            position: relative;
+            z-index: 4;
+        }
+
+        .tunein {
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            margin-left: 20px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: #282828;
+            padding: 10px;
+            border-radius: 25px;
+            width: 420px;
+        }
+
+        .search-icon {
+            color: white;
+            margin-left: 10px;
+        }
+
+        .search-bar {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: white;
+        }
+
+        /* Profile & Welcome Message */
+        .sign-in-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #b62020;
+            /* Red Background */
+            padding: 10px 15px;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: background 0.3s ease;
+        }
+
+        .sign-in-box:hover {
+            background-color: #9e1c1c;
+            /* Darker red on hover */
+        }
+
+        .sign-in-box svg {
+            width: 20px;
+            height: 20px;
+            stroke: #eeecec;
+            /* Light color for the icon */
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            flex-grow: 1;
+            margin-top: 80px;
+            margin-bottom: 80px;
+            width: calc(100% - 250px);
+            transition: all 0.3s;
+        }
+
+        body.sidebar-open .main-content {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .sidebar.closed + .main-content {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        /* Liked Songs Header */
+        .liked-songs-header {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(to bottom, #4f4f7a, #181818);
+            border-radius: 8px;
+        }
+
+        .liked-songs-image {
+            width: 200px;
+            height: 200px;
+            background-color: #b62020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .liked-songs-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .liked-songs-info h1 {
+            font-size: 42px;
+            margin: 0 0 10px 0;
+        }
+
+        .liked-songs-info .songs-count {
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .liked-songs-info .username {
+            font-size: 16px;
+            margin: 10px 0;
+        }
+
+        .liked-songs-image svg {
+            width: 60px;
+            height: 60px;
+        }
+
+        /* Songs Table */
+        .songs-list-container {
+            padding: 0 20px;
+        }
+
+        .songs-list {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .songs-list th {
+            text-align: left;
+            color: #b3b3b3;
+            font-weight: normal;
+            font-size: 14px;
+            padding: 10px 16px;
+            border-bottom: 1px solid #333;
+        }
+
+        .songs-list td {
+            padding: 14px 16px;
+            border-bottom: 1px solid #333;
+        }
+
+        .songs-list tr:hover {
+            background-color: #282828;
+        }
+
+        .song-title-info {
+            display: flex;
+            align-items: center;
+        }
+
+        .song-cover {
+            width: 40px;
+            height: 40px;
+            margin-right: 16px;
+            background-size: cover;
+            background-position: center;
+        }
+
+        .song-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .song-title {
+            font-weight: bold;
+            color: white;
+        }
+
+        .song-artist {
+            font-size: 14px;
+            color: #b3b3b3;
+        }
+
+        .duration {
+            text-align: right;
+            color: #b3b3b3;
+        }
+
+        .index-number {
+            color: #b3b3b3;
+        }
+
+        /* Actions */
+        .song-actions {
+            position: relative;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: white;
+            cursor: pointer;
+            font-size: 20px;
+        }
+
+        .action-menu {
+            position: absolute;
+            right: 0;
+            top: 100%;
+            background: #282828;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 10;
+            min-width: 200px;
+        }
+
+        .song-actions:hover .action-menu {
+            display: block;
+        }
+
+        .action-menu form {
+            width: 100%;
+        }
+
+        .action-menu button {
+            width: 100%;
+            text-align: left;
+            padding: 12px 16px;
+            border: none;
+            background: none;
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .action-menu button:hover {
+            background: #333;
+        }
+
+        /* Full-Width Music Bar */
+        .music-controls {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #181818;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            z-index: 5;
+            border-top: 1px solid #333;
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            padding-left: 20px;
+            max-width: 300px;
+        }
+
+        .track-info svg {
+            margin-right: 12px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .controls button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 5px;
+            background: #333;
+            border-radius: 5px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .progress-bar span {
+            position: absolute;
+            height: 100%;
+            width: 0%;
+            background: #b62020;
+            border-radius: 5px;
+        }
+
+        .volume-container {
+            position: relative;
+        }
+
+        .volume-slider {
+            position: absolute;
+            left: 50%;
+            bottom: 40px;
+            transform: translateX(-50%);
+            display: none;
+            width: 5px;
+            height: 80px;
+            background: #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .volume-slider input {
+            transform: rotate(-90deg);
+            width: 80px;
+            position: absolute;
+            left: -37px;
+            top: 30px;
+        }
+
+        .date-added {
+            color: #b3b3b3;
+            font-size: 14px;
+        }
+
+        /* No songs message */
+        .no-songs {
+            padding: 40px;
+            text-align: center;
+            color: #b3b3b3;
+            font-size: 16px;
+        }
+
+        .create-playlist-container {
+            display: flex;
+            justify-content: flex-end;
+            /* Moves it to the right */
+            align-items: center;
+            margin: 20px 0;
+        }
+
+        .create-playlist-btn {
+            background-color: red;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.3s ease-in-out;
+        }
+
+        .create-playlist-btn:hover {
+            background-color: darkred;
+        }
+
+        /* Modal styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .modal-content {
+            background-color: #282828;
+            margin: 15% auto;
+            padding: 20px;
+            border-radius: 8px;
+            width: 300px;
+            position: relative;
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: white;
+        }
+
+        .modal h2 {
+            color: white;
+            margin-bottom: 20px;
+        }
+
+        .modal input {
+            width: calc(100% - 20px);
+            padding: 12px 10px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            background: #333;
+            color: white;
+            font-size: 16px;
+        }
+
+        .modal button {
+            background-color: #b62020;
+            color: white;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+
+        .modal button:hover {
+            background-color: #9e1c1c;
+        }
+
+    </style>
+</head>
+
+<body>
+    <!-- Add modal HTML -->
+    <div id="createPlaylistModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Create New Playlist</h2>
+            <form action="/create-playlist" method="POST">
+                <input type="text" name="playlistName" placeholder="Enter playlist name" required>
+                <button type="submit">Create Playlist</button>
+            </form>
+        </div>
+    </div>
+
+    <header>
+        <div class="menu-container">
+            <button class="menu-btn" id="menu-btn"><i data-lucide="list"></i></button>
+            <span class="tunein">Tune In</span>
+        </div>
+        <div class="search-container">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" placeholder="Search songs, playlists..." class="search-bar">
+        </div>
+
+        <div class="sign-in-box">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-user-round-pen">
+                <path d="M2 21a8 8 0 0 1 10.821-7.487" />
+                <path
+                    d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+                <circle cx="10" cy="8" r="5" />
+            </svg>
+            <span>Sign In</span>
+        </div>
+    </header>
+
+    <div class="sidebar">
+        <ul>
+            <li onclick="redirectTo('home')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-house">
+                    <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+                    <path
+                        d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg> Home
+            </li>
+            <li onclick="redirectTo('liked-songs')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-heart">
+                    <path
+                        d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                </svg> Liked Songs
+            </li>
+            <li onclick="redirectTo('playlists')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-list-music">
+                    <path d="M21 15V6" />
+                    <path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                    <path d="M12 12H3" />
+                    <path d="M16 6H3" />
+                    <path d="M12 18H3" />
+                </svg> Playlists
+            </li>
+            <li onclick="redirectTo('Mood-based')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-smile-plus">
+                    <path d="M22 11v1a10 10 0 1 1-9-10" />
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                    <line x1="9" x2="9.01" y1="9" y2="9" />
+                    <line x1="15" x2="15.01" y1="9" y2="9" />
+                    <path d="M16 5h6" />
+                    <path d="M19 2v6" />
+                </svg> Mood-based
+            </li>
+            <li onclick="redirectTo('premium')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-crown">
+                    <path
+                        d="M11.562 3.266a.5.5 0 0 1 .876 0L15.39 8.87a1 1 0 0 0 1.516.294L21.183 5.5a.5.5 0 0 1 .798.519l-2.834 10.246a1 1 0 0 1-.956.734H5.81a1 1 0 0 1-.957-.734L2.02 6.02a.5.5 0 0 1 .798-.519l4.276 3.664a1 1 0 0 0 1.516-.294z" />
+                    <path d="M5 21h14" />
+                </svg> Premium
+            </li>
+            <li onclick="redirectTo('profile')">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-user-pen">
+                    <path d="M11.5 15H7a4 4 0 0 0-4 4v2" />
+                    <path
+                        d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+                    <circle cx="10" cy="7" r="4" />
+                </svg> Profile
+            </li>
+        </ul>
+
+        <!-- Your playlists section - similar to the image -->
+        <div class="sidebar-playlists">
+            <% if (typeof userPlaylists !=='undefined' && userPlaylists.length> 0) { %>
+                <% userPlaylists.forEach(playlist=> { %>
+                    <div class="sidebar-playlist-item">
+                        <div class="sidebar-playlist-icon">
+                            <i data-lucide="music"></i>
+                        </div>
+                        <div class="sidebar-playlist-details">
+                            <div class="sidebar-playlist-title">
+                                <%= playlist.name %>
+                            </div>
+                            <div class="sidebar-playlist-subtitle">Playlist • <%= playlist.songs.length %> songs</div>
+                        </div>
+                    </div>
+                    <% }); %>
+                        <% } %>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="liked-songs-header">
+            <div class="liked-songs-image">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-list-music-icon lucide-list-music">
+                    <path d="M21 15V6" />
+                    <path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                    <path d="M12 12H3" />
+                    <path d="M16 6H3" />
+                    <path d="M12 18H3" />
+                </svg>
+            </div>
+            <div class="liked-songs-info">
+                <h1>Playlists</h1>
+                <% const headerUserPlaylists=playlists.filter(playlist=> playlist.userId === loggedInUserId); %>
+                    <% if (headerUserPlaylists.length> 0) { %>
+                        <div class="username">
+                            <%= headerUserPlaylists[0].username %>
+                        </div>
+                        <div class="songs-count">
+                            <%= headerUserPlaylists.length %> Playlists
+                        </div>
+                        <% } else { %>
+                            <div class="songs-count">0 playlists</div>
+                            <% } %>
+                            <div class="create-playlist-container">
+                                <button type="button" class="create-playlist-btn" id="createPlaylistBtn">+ Create a Playlist</button>
+                            </div>
+            </div>
+        </div>
+
+        <div class="songs-list-container">
+            <% const tableUserPlaylists=playlists.filter(playlist=> playlist.userId === loggedInUserId); %>
+                <% if (tableUserPlaylists.length> 0) { %>
+                    <table class="songs-list">
+                        <thead>
+                            <tr>
+                                <th style="width: 50px">#</th>
+                                <th>PLAYLIST TITLE</th>
+                                <th style="width: 50px"></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% tableUserPlaylists.forEach((playlist, index)=> { %>
+                                <tr>
+                                    <td class="index-number">
+                                        <%= index + 1 %>
+                                    </td>
+                                    <td>
+                                        <div class="song-title-info">
+                                            <div class="song-cover" style="background-color: #333;">
+                                                <!-- You can use real image if available -->
+                                                <!-- <img src="<%= playlist.coverUrl %>" alt="<%= playlist.name %>" width="40" height="40"> -->
+                                            </div>
+                                            <div class="song-details">
+                                                <div class="song-title">
+                                                    <form action="/playlists/songs" method="GET" class="playlist-form">
+                                                        <input type="hidden" name="name" value="<%= playlist.name %>">
+                                                        <span class="playlist-text" style="cursor: pointer;">
+                                                            <%= playlist.name %>
+                                                        </span>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+
+                                    <td>
+                                        <div class="song-actions">
+                                            <button class="action-btn">⋮</button>
+                                            <div class="action-menu">
+                                                <form action="/remove-playlist" method="POST">
+                                                    <input type="hidden" name="userId" value="<%= loggedInUserId %>">
+                                                    <input type="hidden" name="songName" value="<%= playlist.name %>">
+                                                    <button type="submit">Remove the playlist</button>
+                                                </form>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                                <% }); %>
+                        </tbody>
+                    </table>
+                    <% } else { %>
+                        <div class="no-songs">
+                            <p>You haven't created any playlists yet. Start exploring and build a collection of your
+                                favorite songs!</p>
+                        </div>
+                        <% } %>
+                          
+
+        </div>
+    </div>
+
+
+
+    <div class="music-controls">
+        <div class="track-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-music">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+            </svg>
+            <div>
+                <div id="track-name">Song Name</div>
+                <div style="font-size: 12px; color: #b3b3b3;">Artist Name</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="prev"><i data-lucide="skip-back"></i></button>
+            <button id="play-pause"><i data-lucide="play"></i></button>
+            <button id="next"><i data-lucide="skip-forward"></i></button>
+        </div>
+        <div class="progress-bar"><span id="progress"></span></div>
+        <div class="controls">
+            <button><i data-lucide="repeat"></i></button>
+            <button><i data-lucide="heart"></i></button>
+            <div class="volume-container">
+                <button id="volume-btn"><i data-lucide="volume-2"></i></button>
+                <div class="volume-slider" id="volume-slider"><input type="range" min="0" max="100" value="50"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            const menuBtn = document.getElementById("menu-btn");
+            const sidebar = document.querySelector(".sidebar");
+            const modal = document.getElementById("createPlaylistModal");
+            const createPlaylistBtn = document.getElementById("createPlaylistBtn");
+            const closeBtn = document.getElementsByClassName("close")[0];
+
+            // Open modal when clicking create playlist button
+            createPlaylistBtn.onclick = function() {
+                modal.style.display = "block";
+            }
+
+            // Close modal when clicking X
+            closeBtn.onclick = function() {
+                modal.style.display = "none";
+            }
+
+            // Close modal when clicking outside
+            window.onclick = function(event) {
+                if (event.target == modal) {
+                    modal.style.display = "none";
+                }
+            }
+
+            menuBtn.addEventListener("click", function () {
+                sidebar.classList.toggle("closed");
+            });
+
+            document.getElementById('volume-btn').addEventListener('click', () => {
+                const slider = document.getElementById('volume-slider');
+                slider.style.display = slider.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Simulate hover effect for song actions
+            const actionBtns = document.querySelectorAll('.action-btn');
+            actionBtns.forEach(btn => {
+                btn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const menu = btn.nextElementSibling;
+                    // Close all other open menus
+                    document.querySelectorAll('.action-menu').forEach(menu => {
+                        menu.style.display = 'none';
+                    });
+                    // Toggle this menu
+                    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+                });
+            });
+
+            // Close menus when clicking outside
+            document.addEventListener('click', () => {
+                document.querySelectorAll('.action-menu').forEach(menu => {
+                    menu.style.display = 'none';
+                });
+            });
+
+            lucide.createIcons();
+        });
+        function redirectTo(pageName) {
+            // For demo purposes just log the navigation
+            // console.log(`Navigating to: ${pageName}`);
+            // In production this would be:
+            window.location.href = `/${pageName}`;
+        }
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll(".playlist-text").forEach(item => {
+                item.addEventListener("click", function () {
+                    this.closest("form").submit();  // Submit the parent form
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>
