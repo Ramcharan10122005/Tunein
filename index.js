@@ -855,6 +855,259 @@ app.get("/search", async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+app.post('/create-order', async (req, res) => {
+    try {
+        const { amount, currency } = req.body;
+        
+        const options = {
+            amount: amount,
+            currency: currency,
+            receipt: `receipt_${Date.now()}`,
+            payment_capture: 1
+        };
+
+        const order = await razorpay.orders.create(options);
+        res.json({
+            orderId: order.id
+        });
+    } catch (error) {
+        console.error('Error creating order:', error);
+        res.status(500).json({ error: 'Error creating order' });
+    }
+});
+
+app.post('/verify-payment', async (req, res) => {
+    try {
+        const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan } = req.body;
+        
+        // Create the expected signature
+        const body = razorpay_order_id + "|" + razorpay_payment_id;
+        const expectedSignature = crypto
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(body.toString())
+            .digest('hex');
+
+        // Verify the signature
+        if (expectedSignature === razorpay_signature) {
+            // Update user's premium status in the database
+            const userId = req.session.userId;
+            const subscriptionEndDate = new Date();
+            
+            // Set subscription end date based on plan
+            if (plan === 'monthly') {
+                subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+            } else if (plan === 'yearly') {
+                subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
+            } else if (plan === 'family') {
+                subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
+            }
+
+            // Update user's premium status in the database
+            await db.query(
+                'UPDATE users SET is_premium = true, subscription_end_date = $1 WHERE id = $2',
+                [subscriptionEndDate, userId]
+            );
+
+            res.json({ success: true });
+        } else {
+            res.status(400).json({ success: false, error: 'Invalid signature' });
+        }
+    } catch (error) {
+        console.error('Error verifying payment:', error);
+        res.status(500).json({ success: false, error: 'Error verifying payment' });
+    }
+});
+
+// Premium Page Route
+app.get("/premium", (req, res) => {
+    if (!req.session.username) {
+        return res.redirect("/login");
+    }
+    res.render("premium", {
+        user: {
+            username: req.session.username
+        }
+    });
+});
+// Logout Route
+app.get("/logout", (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            console.error("Error destroying session:", err);
+        }
+        res.redirect("/login");
+    });
+});
+
+// Profile Routes
+app.get("/profile", async (req, res) => {
+    if (!req.session.username) {
+        return res.redirect("/login");
+    }
+
+    try {
+        // Get user details
+        const userResult = await db.query(
+            "SELECT * FROM users WHERE username = $1",
+            [req.session.username]
+        );
+        
+        if (userResult.rows.length === 0) {
+            return res.redirect("/login");
+        }
+
+        const user = userResult.rows[0];
+
+        // Get liked songs count
+        const likedSongsResult = await db.query(
+            "SELECT COUNT(*) FROM liked WHERE userid = $1",
+            [user.id]
+        );
+        const likedSongsCount = likedSongsResult.rows[0].count;
+
+        // Get playlists count
+        const playlistsResult = await db.query(
+            "SELECT COUNT(*) FROM playlists WHERE userid = $1",
+            [user.id]
+        );
+        const playlistsCount = playlistsResult.rows[0].count;
+
+        res.render("profile", {
+            user,
+            likedSongsCount,
+            playlistsCount,
+            error: req.query.error,
+            success: req.query.success
+        });
+    } catch (err) {
+        console.error("Error fetching profile data:", err);
+        res.render("profile", {
+            user: { username: req.session.username },
+            error: "Error loading profile data",
+            likedSongsCount: 0,
+            playlistsCount: 0
+        });
+    }
+});
+
+// Update username route
+app.post("/update-username", async (req, res) => {
+    if (!req.session.username) {
+        return res.redirect("/login");
+    }
+
+    const { newUsername } = req.body;
+    
+    try {
+        // Check if username is already taken
+        const existingUser = await db.query(
+            "SELECT * FROM users WHERE username = $1 AND username != $2",
+            [newUsername, req.session.username]
+        );
+
+        if (existingUser.rows.length > 0) {
+            return res.redirect("/profile?error=username_taken");
+        }
+
+        // Update username
+        await db.query(
+            "UPDATE users SET username = $1 WHERE username = $2",
+            [newUsername, req.session.username]
+        );
+
+        // Update session
+        req.session.username = newUsername;
+
+        res.redirect("/profile?success=true");
+    } catch (err) {
+        console.error("Error updating username:", err);
+        res.redirect("/profile?error=update_failed");
+    }
+});
+
+app.post("/update-profile", async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect("/login");
+    }
+
+    try {
+        const { username, email } = req.body;
+
+        // Check if username or email is already taken by another user
+        const existingUser = await db.query(
+            "SELECT * FROM users WHERE (username = $1 OR email = $2) AND id != $3",
+            [username, email, req.session.userId]
+        );
+
+        if (existingUser.rows.length > 0) {
+            return res.render("profile", {
+                error: true,
+                errorMessage: "Username or email already taken",
+                user: { username, email }
+            });
+        }
+
+        // Update user profile
+        await db.query(
+            "UPDATE users SET username = $1, email = $2 WHERE id = $3",
+            [username, email, req.session.userId]
+        );
+
+        // Update session
+        req.session.username = username;
+
+        res.redirect("/profile");
+    } catch (err) {
+        console.error("Error updating profile:", err);
+        res.status(500).send("Error updating profile");
+    }
+});
+
+app.post("/change-password", async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect("/login");
+    }
+
+    try {
+        const { currentPassword, newPassword, confirmPassword } = req.body;
+
+        // Verify current password
+        const user = await db.query("SELECT * FROM users WHERE id = $1", [req.session.userId]);
+        if (user.rows.length === 0) {
+            return res.redirect("/login");
+        }
+
+        const validPassword = await bcrypt.compare(currentPassword, user.rows[0].password);
+        if (!validPassword) {
+            return res.render("profile", {
+                error: true,
+                errorMessage: "Current password is incorrect",
+                user: user.rows[0]
+            });
+        }
+
+        // Check if new passwords match
+        if (newPassword !== confirmPassword) {
+            return res.render("profile", {
+                error: true,
+                errorMessage: "New passwords do not match",
+                user: user.rows[0]
+            });
+        }
+
+        // Hash and update new password
+        const hashedPassword = await bcrypt.hash(newPassword, saltrounds);
+        await db.query(
+            "UPDATE users SET password = $1 WHERE id = $2",
+            [hashedPassword, req.session.userId]
+        );
+
+        res.redirect("/profile");
+    } catch (err) {
+        console.error("Error changing password:", err);
+        res.status(500).send("Error changing password");
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);

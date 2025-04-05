@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Premium | Tune In</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0f0f0f;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+
+        /* Header Styles */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background: #0f0f0f;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 20px;
+            z-index: 1000;
+            border-bottom: 1px solid #282828;
+        }
+
+        .menu-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        .tunein {
+            font-family: 'Pacifico', cursive;
+            color: white;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .tunein img {
+            width: 30px;
+            height: 30px;
+        }
+
+        /* Sidebar Styles */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100%;
+            background: #0f0f0f;
+            padding: 80px 0 20px;
+            transition: transform 0.3s ease;
+            z-index: 100;
+            border-right: 1px solid #282828;
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar li {
+            padding: 15px 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            color: #b3b3b3;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .sidebar li:hover {
+            color: white;
+        }
+
+        .sidebar li.active {
+            color: white;
+        }
+
+        .sidebar li i {
+            width: 24px;
+            height: 24px;
+            color: #b62020;
+        }
+
+        .sidebar li:hover i {
+            color: #b62020;
+        }
+
+        .sidebar li.active i {
+            color: #b62020;
+        }
+
+        /* Search Container */
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: #282828;
+            border-radius: 20px;
+            padding: 5px 15px;
+            flex: 0 1 400px;
+        }
+
+        .search-icon {
+            color: #b3b3b3;
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+        }
+
+        .search-bar {
+            background: none;
+            border: none;
+            color: white;
+            width: 100%;
+            padding: 5px;
+            outline: none;
+        }
+
+        .search-bar::placeholder {
+            color: #b3b3b3;
+        }
+
+        /* User Container */
+        .user-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 5px 10px;
+            border-radius: 20px;
+            transition: background-color 0.3s ease;
+        }
+
+        .user-container:hover {
+            background-color: #282828;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            background: #b62020;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .user-name {
+            color: white;
+        }
+
+        /* Main Content Adjustment */
+        .premium-container {
+            margin-left: 250px;
+            margin-top: 80px;
+            padding: 20px;
+            max-width: calc(100% - 250px);
+            transition: margin-left 0.3s ease, max-width 0.3s ease;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .premium-container {
+                margin-left: 0;
+                max-width: 100%;
+            }
+        }
+
+        .premium-header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+
+        .premium-header h1 {
+            font-size: 48px;
+            margin-bottom: 20px;
+            background: linear-gradient(to right, #b62020, #ff3b30);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .premium-header p {
+            font-size: 18px;
+            color: #b3b3b3;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .plans-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+
+        .plan-card {
+            background: #282828;
+            border-radius: 12px;
+            padding: 30px;
+            text-align: center;
+            transition: transform 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-10px);
+        }
+
+        .plan-card.popular {
+            border: 2px solid #b62020;
+        }
+
+        .popular-badge {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: #b62020;
+            color: white;
+            padding: 5px 15px;
+            font-size: 12px;
+            border-bottom-left-radius: 12px;
+        }
+
+        .plan-name {
+            font-size: 24px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .plan-price {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 20px;
+            color: white;
+        }
+
+        .plan-price span {
+            font-size: 16px;
+            color: #b3b3b3;
+        }
+
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 30px;
+        }
+
+        .plan-features li {
+            margin-bottom: 10px;
+            color: #b3b3b3;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .plan-features li i {
+            color: #b62020;
+        }
+
+        .subscribe-btn {
+            background: #b62020;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            width: 100%;
+        }
+
+        .subscribe-btn:hover {
+            background: #9e1c1c;
+        }
+
+        .benefits-section {
+            margin-top: 80px;
+            text-align: center;
+        }
+
+        .benefits-section h2 {
+            font-size: 36px;
+            margin-bottom: 40px;
+            color: white;
+        }
+
+        .benefits-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+        }
+
+        .benefit-card {
+            background: #282828;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .benefit-card i {
+            font-size: 40px;
+            color: #b62020;
+            margin-bottom: 20px;
+        }
+
+        .benefit-card h3 {
+            font-size: 20px;
+            margin-bottom: 10px;
+            color: white;
+        }
+
+        .benefit-card p {
+            color: #b3b3b3;
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .premium-header h1 {
+                font-size: 36px;
+            }
+
+            .plans-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="menu-container">
+            <button class="menu-btn" id="menu-btn">
+                <i data-lucide="menu" style="color: white;"></i>
+            </button>
+            <span class="tunein">
+                <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="Tune In">
+                Tune In
+            </span>
+        </div>
+        <div class="search-container">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" class="search-bar" placeholder="Search songs, playlists...">
+        </div>
+        <% if (typeof user !== 'undefined' && user) { %>
+            <div class="user-container" onclick="window.location.href='/profile'">
+                <div class="user-avatar">
+                    <%= user.username.charAt(0).toUpperCase() %>
+                </div>
+                <span class="user-name"><%= user.username %></span>
+            </div>
+        <% } else { %>
+            <button class="sign-in-btn" onclick="window.location.href='/login'" style="background: #b62020; padding: 8px 16px; border-radius: 20px; display: flex; align-items: center; gap: 8px; border: none; color: white; cursor: pointer;">
+                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+                Sign In
+            </button>
+        <% } %>
+    </header>
+
+    <div class="sidebar" id="sidebar">
+        <ul>
+            <li onclick="window.location.href='/'">
+                <i data-lucide="home"></i>
+                Home
+            </li>
+            <li onclick="window.location.href='/liked-songs'">
+                <i data-lucide="heart"></i>
+                Liked Songs
+            </li>
+            <li onclick="window.location.href='/playlists'">
+                <i data-lucide="list-music"></i>
+                Playlists
+            </li>
+            <li onclick="window.location.href='/Mood-based'">
+                <i data-lucide="smile"></i>
+                Mood-based
+            </li>
+            <li class="active" onclick="window.location.href='/premium'">
+                <i data-lucide="crown"></i>
+                Premium
+            </li>
+            <li onclick="window.location.href='/profile'">
+                <i data-lucide="user"></i>
+                Profile
+            </li>
+        </ul>
+    </div>
+
+    <div class="premium-container">
+        <div class="premium-header">
+            <h1>Upgrade to Premium</h1>
+            <p>Get unlimited access to all features and enjoy an ad-free experience</p>
+        </div>
+
+        <div class="plans-container">
+            <div class="plan-card">
+                <h3 class="plan-name">Monthly</h3>
+                <div class="plan-price">₹199<span>/month</span></div>
+                <ul class="plan-features">
+                    <li><i data-lucide="check"></i> Ad-free listening</li>
+                    <li><i data-lucide="check"></i> Unlimited skips</li>
+                    <li><i data-lucide="check"></i> High quality audio</li>
+                    <li><i data-lucide="check"></i> Offline downloads</li>
+                </ul>
+                <button class="subscribe-btn" onclick="handleSubscription('monthly')">Subscribe Now</button>
+            </div>
+
+            <div class="plan-card popular">
+                <div class="popular-badge">Most Popular</div>
+                <h3 class="plan-name">Yearly</h3>
+                <div class="plan-price">₹1,999<span>/year</span></div>
+                <ul class="plan-features">
+                    <li><i data-lucide="check"></i> Ad-free listening</li>
+                    <li><i data-lucide="check"></i> Unlimited skips</li>
+                    <li><i data-lucide="check"></i> High quality audio</li>
+                    <li><i data-lucide="check"></i> Offline downloads</li>
+                    <li><i data-lucide="check"></i> Save 16%</li>
+                </ul>
+                <button class="subscribe-btn" onclick="handleSubscription('yearly')">Subscribe Now</button>
+            </div>
+
+            <div class="plan-card">
+                <h3 class="plan-name">Family</h3>
+                <div class="plan-price">₹399<span>/month</span></div>
+                <ul class="plan-features">
+                    <li><i data-lucide="check"></i> Up to 6 accounts</li>
+                    <li><i data-lucide="check"></i> Ad-free listening</li>
+                    <li><i data-lucide="check"></i> Unlimited skips</li>
+                    <li><i data-lucide="check"></i> High quality audio</li>
+                    <li><i data-lucide="check"></i> Offline downloads</li>
+                </ul>
+                <button class="subscribe-btn" onclick="handleSubscription('family')">Subscribe Now</button>
+            </div>
+        </div>
+
+        <div class="benefits-section">
+            <h2>Premium Benefits</h2>
+            <div class="benefits-grid">
+                <div class="benefit-card">
+                    <i data-lucide="music"></i>
+                    <h3>Ad-Free Listening</h3>
+                    <p>Enjoy uninterrupted music without any advertisements</p>
+                </div>
+                <div class="benefit-card">
+                    <i data-lucide="skip-forward"></i>
+                    <h3>Unlimited Skips</h3>
+                    <p>Skip as many songs as you want, whenever you want</p>
+                </div>
+                <div class="benefit-card">
+                    <i data-lucide="download"></i>
+                    <h3>Offline Mode</h3>
+                    <p>Download your favorite songs and listen offline</p>
+                </div>
+                <div class="benefit-card">
+                    <i data-lucide="headphones"></i>
+                    <h3>High Quality Audio</h3>
+                    <p>Experience crystal clear sound with high quality audio</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+        
+        // Handle sidebar toggle
+        const menuBtn = document.getElementById('menu-btn');
+        const sidebar = document.getElementById('sidebar');
+        const mainContent = document.querySelector('.main-content');
+
+        menuBtn.addEventListener('click', () => {
+            sidebar.classList.toggle('open');
+            mainContent.classList.toggle('sidebar-open');
+        });
+
+        // Handle search
+        const searchInput = document.querySelector('.search-bar');
+        searchInput.addEventListener('keypress', (event) => {
+            if (event.key === 'Enter') {
+                const query = searchInput.value;
+                window.location.href = `/search?query=${encodeURIComponent(query)}`;
+            }
+        });
+
+        // Close sidebar when clicking outside
+        document.addEventListener('click', (event) => {
+            if (!sidebar.contains(event.target) && !menuBtn.contains(event.target) && sidebar.classList.contains('open')) {
+                sidebar.classList.remove('open');
+                mainContent.classList.remove('sidebar-open');
+            }
+        });
+
+        // Handle subscription
+        function handleSubscription(plan) {
+            const amount = plan === 'monthly' ? 19900 : plan === 'yearly' ? 199900 : 39900;
+            const options = {
+                key: '<%= process.env.RAZORPAY_KEY_ID %>',
+                amount: amount,
+                currency: 'INR',
+                name: 'Tune In',
+                description: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Subscription`,
+                image: '/images/Copy_of_Copy_of_TuneIn-removebg-preview.png',
+                order_id: '', // This will be set by the server
+                handler: function(response) {
+                    // Handle successful payment
+                    fetch('/verify-payment', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_signature: response.razorpay_signature,
+                            plan: plan
+                        })
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            alert('Payment successful! Your premium subscription is now active.');
+                            window.location.href = '/profile';
+                        } else {
+                            alert('Payment verification failed. Please try again.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        alert('An error occurred. Please try again.');
+                    });
+                },
+                prefill: {
+                    name: '<%= user ? user.username : "" %>',
+                    email: '<%= user ? user.email : "" %>'
+                },
+                theme: {
+                    color: '#b62020'
+                }
+            };
+
+            // Create order and open Razorpay checkout
+            fetch('/create-order', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    amount: amount,
+                    currency: 'INR'
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                options.order_id = data.orderId;
+                const rzp = new Razorpay(options);
+                rzp.open();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            });
+        }
+    </script>
+</body>
+</html>
