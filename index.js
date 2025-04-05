@@ -13,6 +13,7 @@ import session from "express-session";
 import env from "dotenv";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
+import Razorpay from "razorpay";
 
 const app = express();
 const port = 3000;
@@ -125,149 +126,37 @@ app.get("/reset", (req, res) => {
     });
 });
 app.get("/Mood-based",(req,res)=>{
+    if (!req.session.userId) {
+        return res.redirect("/login");
+    }
     res.render("moods.ejs", {
         user: req.session.username
     });
 })
 app.get("/based", async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect("/login");
+    }
     try {
-        const mood = req.query.mood;
+        let mood = req.query.mood;
+        if (!mood) {
+            return res.status(400).render('error', {
+                error: 'Mood parameter is required'
+            });
+        }
         
-        // Dummy data for testing
-        const dummySongs = {
-            happy: [
-                {
-                    title: "Happy",
-                    artist: "Pharrell Williams",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "happy"
-                },
-                {
-                    title: "Good Vibrations",
-                    artist: "Beach Boys",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "happy"
-                },
-                {
-                    title: "Walking on Sunshine",
-                    artist: "Katrina & The Waves",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "happy"
-                }
-            ],
-            sad: [
-                {
-                    title: "Someone Like You",
-                    artist: "Adele",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "sad"
-                },
-                {
-                    title: "All By Myself",
-                    artist: "Celine Dion",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "sad"
-                }
-            ],
-            love: [
-                {
-                    title: "Perfect",
-                    artist: "Ed Sheeran",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "love"
-                },
-                {
-                    title: "All of Me",
-                    artist: "John Legend",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "love"
-                }
-            ],
-            energetic: [
-                {
-                    title: "Eye of the Tiger",
-                    artist: "Survivor",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "energetic"
-                },
-                {
-                    title: "Stronger",
-                    artist: "Kanye West",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "energetic"
-                }
-            ],
-            chill: [
-                {
-                    title: "Chill Vibes",
-                    artist: "Lofi Artists",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "chill"
-                },
-                {
-                    title: "Relaxation",
-                    artist: "Ambient Music",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "chill"
-                }
-            ],
-            party: [
-                {
-                    title: "Party Rock Anthem",
-                    artist: "LMFAO",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "party"
-                },
-                {
-                    title: "I Gotta Feeling",
-                    artist: "Black Eyed Peas",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "party"
-                }
-            ],
-            focus: [
-                {
-                    title: "Focus Music",
-                    artist: "Study Beats",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "focus"
-                },
-                {
-                    title: "Concentration",
-                    artist: "Brain Waves",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "focus"
-                }
-            ],
-            workout: [
-                {
-                    title: "Workout Mix",
-                    artist: "Fitness Beats",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "workout"
-                },
-                {
-                    title: "Pump It Up",
-                    artist: "Workout Artists",
-                    cover: Buffer.from("dummy_cover_data"),
-                    mood: "workout"
-                }
-            ]
-        };
+        mood = mood.toLowerCase();
+        const songs = await db.query("SELECT * FROM songs WHERE mood = $1", [mood]);
 
-        // Get songs based on mood from dummy data
-        const songs = dummySongs[mood] || [];
-        
         res.render("based.ejs", {
-            songs: songs,
+            songs: songs.rows,
             mood: mood,
             user: req.session.username
         });
     } catch (err) {
         console.error("Error fetching mood-based songs:", err);
         res.status(500).render("error", {
-            message: "Error loading mood-based songs",
-            user: req.session.username
+            error: "Error loading mood-based songs"
         });
     }
 });
@@ -511,7 +400,7 @@ app.get("/playlists", (req, res) => {
 
 
 
-    res.render("playlist.ejs", { playlists, loggedInUserId });
+    res.render("playlist.ejs", { user: req.session.username, playlists, loggedInUserId });
 });
 
 
@@ -616,7 +505,7 @@ app.get("/liked-songs", async (req, res) => {
         res.render("liked", {
             likedSongs: likedSongs,
             loggedInUserId: req.session.userId,
-            username: req.session.username
+            user: req.session.username
         });
     } catch (err) {
         console.error("Error fetching liked songs:", err);
@@ -859,20 +748,30 @@ app.post('/create-order', async (req, res) => {
     try {
         const { amount, currency } = req.body;
         
+        // Validate required parameters
+        if (!amount || !currency) {
+            return res.status(400).json({ error: 'Amount and currency are required' });
+        }
+        
+        // Initialize Razorpay with your credentials
+        const razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET
+        });
+        
         const options = {
             amount: amount,
             currency: currency,
             receipt: `receipt_${Date.now()}`,
-            payment_capture: 1
         };
-
+        
         const order = await razorpay.orders.create(options);
-        res.json({
-            orderId: order.id
-        });
+        res.json({ orderId: order.id });
     } catch (error) {
         console.error('Error creating order:', error);
-        res.status(500).json({ error: 'Error creating order' });
+        res.status(500).render('error', { 
+            error: 'Failed to create payment order. Please try again.' 
+        });
     }
 });
 
@@ -1111,4 +1010,19 @@ app.post("/change-password", async (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
+});
+
+// Error handler middleware
+app.use((err, req, res, next) => {
+    console.error('Error:', err);
+    res.status(err.status || 500).render('error', {
+        error: err.message || 'An unexpected error occurred'
+    });
+});
+
+// 404 handler
+app.use((req, res) => {
+    res.status(404).render('error', {
+        error: 'Page not found'
+    });
 });

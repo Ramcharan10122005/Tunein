@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error | Tune In</title>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: #0f0f0f;
+            color: white;
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+
+        .error-container {
+            padding: 2rem;
+            max-width: 600px;
+            width: 90%;
+        }
+
+        .logo {
+            margin-bottom: 2rem;
+        }
+
+        .logo img {
+            width: 100px;
+            height: auto;
+        }
+
+        .logo-text {
+            font-family: 'Pacifico', cursive;
+            font-size: 2rem;
+            margin: 1rem 0;
+            color: white;
+        }
+
+        .error-title {
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            color: #b62020;
+        }
+
+        .error-message {
+            margin-bottom: 2rem;
+            color: #b3b3b3;
+            line-height: 1.5;
+        }
+
+        .back-button {
+            background: #b62020;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .back-button:hover {
+            background: #9e1c1c;
+        }
+    </style>
+</head>
+<body>
+    <div class="error-container">
+        <div class="logo">
+            <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="Tune In">
+            <div class="logo-text">Tune In</div>
+        </div>
+        <div class="error-title">Oops! Something went wrong</div>
+        <div class="error-message">
+            <% if (typeof error !== 'undefined' && error) { %>
+                <%= error %>
+            <% } else { %>
+                An unexpected error occurred. Please try again later.
+            <% } %>
+        </div>
+        <a href="/" class="back-button">Back to Home</a>
+    </div>
+</body>
+</html> 
