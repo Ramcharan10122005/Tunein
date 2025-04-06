@@ -35,6 +35,7 @@ app.use(
 );
 
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 app.use(session({ secret: "yourSecretKey", resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
@@ -965,7 +966,7 @@ app.post('/create-order', async (req, res) => {
         const options = {
             amount: amountInPaise,
             currency: currency,
-            receipt: receipt_$`{Date.now()}`,
+            receipt: `receipt_${Date.now()}`,
         };
         
         console.log('Creating Razorpay order with options:', options);
@@ -1246,6 +1247,17 @@ app.get("/profile", async (req, res) => {
 
         const user = userResult.rows[0];
 
+        // Get subscription details
+        const subscriptionResult = await db.query(
+            `SELECT plan_type, subscription_end_date 
+            FROM premium_users 
+            WHERE user_id = $1 
+            AND subscription_end_date > CURRENT_TIMESTAMP 
+            ORDER BY subscription_end_date DESC 
+            LIMIT 1`,
+            [user.id]
+        );
+
         // Get liked songs count
         const likedSongsResult = await db.query(
             "SELECT COUNT(*) FROM liked WHERE userid = $1",
@@ -1265,7 +1277,8 @@ app.get("/profile", async (req, res) => {
             likedSongsCount,
             playlistsCount,
             error: req.query.error,
-            success: req.query.success
+            success: req.query.success,
+            subscriptionDetails: subscriptionResult.rows[0] || null
         });
     } catch (err) {
         console.error("Error fetching profile data:", err);
@@ -1273,7 +1286,8 @@ app.get("/profile", async (req, res) => {
             user: { username: req.session.username },
             error: "Error loading profile data",
             likedSongsCount: 0,
-            playlistsCount: 0
+            playlistsCount: 0,
+            subscriptionDetails: null
         });
     }
 });
