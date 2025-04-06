@@ -93,6 +93,171 @@
             cursor: pointer;
             padding: 10px;
         }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .featured-playlists {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .recently-played {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .mood-section {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            
+            .section-title {
+                font-size: 22px;
+            }
+            
+            .playlist-card {
+                padding: 15px;
+            }
+            
+            .playlist-card img {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .playlist-card h3 {
+                font-size: 16px;
+            }
+            
+            .playlist-card p {
+                font-size: 12px;
+            }
+            
+            .mood-card {
+                padding: 15px;
+            }
+            
+            .mood-card img {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .mood-card h3 {
+                font-size: 16px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .featured-playlists {
+                grid-template-columns: 1fr;
+            }
+            
+            .recently-played {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .mood-section {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .section-title {
+                font-size: 20px;
+            }
+            
+            .playlist-card {
+                padding: 12px;
+            }
+            
+            .playlist-card img {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .playlist-card h3 {
+                font-size: 14px;
+            }
+            
+            .playlist-card p {
+                font-size: 11px;
+            }
+            
+            .mood-card {
+                padding: 12px;
+            }
+            
+            .mood-card img {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .mood-card h3 {
+                font-size: 14px;
+            }
+            
+            .ad-image {
+                height: 60vh;
+            }
+            
+            .ad-title {
+                font-size: 20px;
+            }
+            
+            .ad-timer {
+                font-size: 16px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .recently-played {
+                grid-template-columns: 1fr;
+            }
+            
+            .mood-section {
+                grid-template-columns: 1fr;
+            }
+            
+            .section-title {
+                font-size: 18px;
+            }
+            
+            .playlist-card {
+                padding: 10px;
+            }
+            
+            .playlist-card img {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .playlist-card h3 {
+                font-size: 13px;
+            }
+            
+            .playlist-card p {
+                font-size: 10px;
+            }
+            
+            .mood-card {
+                padding: 10px;
+            }
+            
+            .mood-card img {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .mood-card h3 {
+                font-size: 13px;
+            }
+            
+            .ad-image {
+                height: 50vh;
+            }
+            
+            .ad-title {
+                font-size: 18px;
+            }
+            
+            .ad-timer {
+                font-size: 14px;
+            }
+        }
     </style>
 </head>
 
@@ -346,11 +511,11 @@
                         <source id="audio-source" src="<%= locals.song ? locals.song.audio : '' %>" type="audio/mpeg">
                         Your browser does not support the audio tag.
                     </audio>
-                    <button id="prev"><i data-lucide="skip-back"></i></button>
+                    <button id="prev" onclick="redirecttorand()"><i data-lucide="skip-back"></i></button>
                     <button id="play-pause">
                         <i id="play-icon" data-lucide="play"></i>
                     </button>
-                    <button id="next"><i data-lucide="skip-forward"></i></button>
+                    <button id="next" onclick="redirecttorand()"><i data-lucide="skip-forward"></i></button>
                 </div>
 
                 <div class="progress-bar" id="progress-container">
@@ -358,11 +523,9 @@
                 </div>
 
                 <div class="controls">
-                    <button><i data-lucide="repeat"></i></button>
                     <button class="like-btn" id="like-btn" data-liked="false" onclick="redirectToLike()"><i
                             data-lucide="heart"></i></button>
                     <div class="controls">
-                        <button><i data-lucide="repeat"></i></button>
                         <div class="volume-container">
                             <button id="volume-btn"><i data-lucide="volume-2"></i></button>
                             <div class="volume-slider" id="volume-slider" style="bottom: 140px;left:-100px;">
@@ -512,6 +675,9 @@
                 }
             }
         });
+        function redirecttorand() {
+            window.location.href = `/random-song`;
+        }
         function updateVolumeSlider(value) {
             const slider = document.querySelector('.volume-slider');
             if (slider) {

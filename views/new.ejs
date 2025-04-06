@@ -5,15 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sign Up</title>
     <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/main.css">
     <script defer src="/script.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <style>
         .logo-text {
             font-family: 'Pacifico', cursive;
-            font-size: 36px; /* Adjust size */
+            font-size: 36px;
             font-weight: normal;
             text-align: center;
-            color: white; /* Adjust color as needed */
+            color: white;
         }
         .error-message {
             background-color: #ffebee;
@@ -27,31 +28,76 @@
         .error-message.user-exists {
             display: block;
         }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading .button-text {
+            display: none;
+        }
+        .loading .loading-spinner {
+            display: inline-block;
+        }
     </style>
 </head>
 <body>
-    <div class="auth-container">
+    <div class="login-background">
+        <div class="particles"></div>
+        <div class="sound-waves"></div>
+        <div class="ring"></div>
+        <div class="musical-note"></div>
+    </div>
+    <div class="auth-container animate-fade-in">
         <div class="error-message <%= error && errorType === 'user-exists' ? 'user-exists' : '' %>">
             <%= error && errorType === 'user-exists' ? errorMessage : '' %>
         </div>
-        <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo">
-        <h2 class="logo-text">TuneIn</h2>
-        <h2>Reset password</h2>
-        <form action="/new" method="POST">
-            <div class="input-container">
+        <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo" class="animate-slide-bottom" style="animation-delay: 0.1s;">
+        <h2 class="logo-text animate-slide-bottom" style="animation-delay: 0.2s;">TuneIn</h2>
+        <h2 class="animate-slide-bottom" style="animation-delay: 0.3s;">Reset password</h2>
+        <form action="/new" method="POST" id="newPasswordForm">
+            <div class="input-container animate-slide-bottom" style="animation-delay: 0.4s;">
                 <input type="password" id="password" name="password" placeholder=" " required>
                 <label for="password">Enter new password</label>
                 <span class="toggle-password" onclick="togglePassword('password')">👁</span>
             </div>
 
-            <div class="input-container">
+            <div class="input-container animate-slide-bottom" style="animation-delay: 0.5s;">
                 <input type="password" id="confirm_password" name="confirm_password" placeholder=" " required>
                 <label for="confirm_password">Confirm new password</label>
                 <span class="toggle-password" onclick="togglePassword('confirm_password')">👁</span>
             </div>
 
-            <button type="submit">Save</button>
+            <button type="submit" class="animate-slide-bottom hover-lift" style="animation-delay: 0.6s;" id="submitBtn">
+                <div class="button-content">
+                    <span class="button-text">Save</span>
+                    <div class="loading-spinner"></div>
+                </div>
+            </button>
         </form>
+        <p class="animate-fade-in" style="animation-delay: 0.7s;"><a href="/login">Back to Login</a></p>
     </div>
+
+    <script>
+        document.getElementById('newPasswordForm').addEventListener('submit', function() {
+            const button = document.getElementById('submitBtn');
+            button.classList.add('loading');
+            button.disabled = true;
+        });
+    </script>
 </body>
 </html>

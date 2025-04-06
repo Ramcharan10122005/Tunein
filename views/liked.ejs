@@ -653,6 +653,203 @@
             text-align: center;
             margin-top: 10px;
         }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 220px;
+            }
+            
+            .sidebar.closed {
+                transform: translateX(-220px);
+            }
+            
+            .main-content {
+                margin-left: 220px;
+            }
+            
+            .main-content.sidebar-closed {
+                margin-left: 0;
+            }
+            
+            .liked-header {
+                padding: 20px;
+            }
+            
+            .liked-title {
+                font-size: 24px;
+            }
+            
+            .liked-description {
+                font-size: 14px;
+            }
+            
+            .song-item {
+                padding: 10px 15px;
+            }
+            
+            .song-number {
+                width: 30px;
+                font-size: 14px;
+            }
+            
+            .song-title {
+                font-size: 14px;
+            }
+            
+            .song-artist {
+                font-size: 12px;
+            }
+            
+            .song-duration {
+                font-size: 12px;
+            }
+            
+            .song-actions {
+                gap: 10px;
+            }
+            
+            .song-actions button {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .song-actions i {
+                width: 18px;
+                height: 18px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .sidebar.closed {
+                transform: translateX(-200px);
+            }
+            
+            .main-content {
+                margin-left: 200px;
+            }
+            
+            .main-content.sidebar-closed {
+                margin-left: 0;
+            }
+            
+            .liked-header {
+                padding: 15px;
+            }
+            
+            .liked-title {
+                font-size: 20px;
+            }
+            
+            .liked-description {
+                font-size: 12px;
+            }
+            
+            .song-item {
+                padding: 8px 12px;
+            }
+            
+            .song-number {
+                width: 25px;
+                font-size: 12px;
+            }
+            
+            .song-title {
+                font-size: 13px;
+            }
+            
+            .song-artist {
+                font-size: 11px;
+            }
+            
+            .song-duration {
+                font-size: 11px;
+            }
+            
+            .song-actions {
+                gap: 8px;
+            }
+            
+            .song-actions button {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .song-actions i {
+                width: 16px;
+                height: 16px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .toggle-sidebar {
+                display: block;
+            }
+            
+            .liked-header {
+                padding: 10px;
+            }
+            
+            .liked-title {
+                font-size: 18px;
+            }
+            
+            .liked-description {
+                font-size: 11px;
+            }
+            
+            .song-item {
+                padding: 8px 10px;
+            }
+            
+            .song-number {
+                width: 20px;
+                font-size: 11px;
+            }
+            
+            .song-title {
+                font-size: 12px;
+            }
+            
+            .song-artist {
+                font-size: 10px;
+            }
+            
+            .song-duration {
+                font-size: 10px;
+            }
+            
+            .song-actions {
+                gap: 5px;
+            }
+            
+            .song-actions button {
+                width: 25px;
+                height: 25px;
+            }
+            
+            .song-actions i {
+                width: 14px;
+                height: 14px;
+            }
+        }
     </style>
 </head>
 
@@ -888,11 +1085,11 @@
                 <source id="audio-source" src="" type="audio/mpeg">
                 Your browser does not support the audio tag.
             </audio>
-            <button id="prev"><i data-lucide="skip-back"></i></button>
+            <button id="prev" onclick="redirecttorand()"><i data-lucide="skip-back"></i></button>
             <button id="play-pause">
                 <i id="play-icon" data-lucide="play"></i>
             </button>
-            <button id="next"><i data-lucide="skip-forward"></i></button>
+            <button id="next" onclick="redirecttorand()"><i data-lucide="skip-forward"></i></button>
         </div>
 
         <div class="progress-bar" id="progress-container">
@@ -900,7 +1097,6 @@
         </div>
 
         <div class="controls">
-            <button><i data-lucide="repeat"></i></button>
             <button class="like-btn" id="like-btn" data-liked="false"><i data-lucide="heart"></i></button>
             <div class="volume-container">
                 <button id="volume-btn"><i data-lucide="volume-2"></i></button>
@@ -1132,7 +1328,139 @@
         function redirectTo(pageName) {
             window.location.href = `/${pageName}`;
         }
-
+        function redirecttorand() {
+            // Fetch the song data and update audio player
+            fetch(`/rand`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    console.log("Song data received:", data);
+                    
+                    // Update track info
+                    document.getElementById("track-name").textContent = data.title;
+                    document.getElementById("artist-name").textContent = data.artist;
+                    
+                    // Update song image and play icon immediately
+                    const songIcon = document.getElementById('song-cover');
+                    const defaultIcon = document.getElementById('default-music-icon');
+                    const playIcon = document.getElementById('play-icon');
+                    
+                    songIcon.src = data.image;
+                    songIcon.alt = data.title;
+                    songIcon.style.display = 'block';
+                    defaultIcon.style.display = 'none';
+                    
+                    // Change to pause icon immediately
+                    playIcon.setAttribute("data-lucide", "pause");
+                    lucide.createIcons();
+                    
+                    // Update audio source
+                    audio.src = data.audio;
+                    audio.load();
+                    
+                    // Handle ad if present
+                    if (data.showAd && data.ad) {
+                        console.log("Ad should be shown:", data.ad);
+                        // Don't start playing the song yet, wait for the ad to finish
+                        showAd(data.ad);
+                    } else {
+                        // Start playing if no ad
+                        console.log("No ad to show, starting song playback");
+                        audio.play().catch(error => {
+                            console.error("Error playing audio:", error);
+                            // Reset to play icon if there's an error
+                            playIcon.setAttribute("data-lucide", "play");
+                            lucide.createIcons();
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching song:", error);
+                    alert("Error playing song. Please try again.");
+                    // Reset to play icon if there's an error
+                    const playIcon = document.getElementById('play-icon');
+                    playIcon.setAttribute("data-lucide", "play");
+                    lucide.createIcons();
+                });
+        }
+        function play(title) {
+            console.log("Playing song:", title);
+            
+            // Get the song details from the clicked row
+            const row = event.currentTarget;
+            const cover = row.querySelector('.song-cover').style.backgroundImage.slice(4, -1).replace(/"/g, "");
+            const songTitle = row.querySelector('.song-title').textContent.trim();
+            const artist = row.querySelector('.song-artist').textContent.trim();
+            
+            // Update track info
+            document.getElementById("track-name").textContent = songTitle;
+            document.getElementById("artist-name").textContent = artist;
+            
+            // Update song image and play icon immediately
+            const songIcon = document.getElementById('song-cover');
+            const defaultIcon = document.getElementById('default-music-icon');
+            const playIcon = document.getElementById('play-icon');
+            
+            songIcon.src = cover;
+            songIcon.alt = songTitle;
+            songIcon.style.display = 'block';
+            defaultIcon.style.display = 'none';
+            
+            // Change to pause icon immediately
+            playIcon.setAttribute("data-lucide", "pause");
+            lucide.createIcons();
+            
+            // Fetch the song data and update audio player
+            fetch(`/rand`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    console.log("Song data received:", data);
+                    
+                    // Update audio source
+                    audio.src = data.audio;
+                    audio.load();
+                    
+                    // Handle ad if present
+                    if (data.showAd && data.ad) {
+                        console.log("Ad should be shown:", data.ad);
+                        // Don't start playing the song yet, wait for the ad to finish
+                        showAd(data.ad);
+                    } else {
+                        // Start playing if no ad
+                        console.log("No ad to show, starting song playback");
+                        audio.play().catch(error => {
+                            console.error("Error playing audio:", error);
+                            // Reset to play icon if there's an error
+                            playIcon.setAttribute("data-lucide", "play");
+                            lucide.createIcons();
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error("Error fetching song:", error);
+                    alert("Error playing song. Please try again.");
+                    // Reset to play icon if there's an error
+                    playIcon.setAttribute("data-lucide", "play");
+                    lucide.createIcons();
+                });
+        }
         function play(title) {
             console.log("Playing song:", title);
             

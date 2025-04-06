@@ -357,6 +357,202 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .premium-container {
+                padding: 20px;
+            }
+            
+            .premium-header {
+                padding: 20px;
+            }
+            
+            .premium-title {
+                font-size: 28px;
+            }
+            
+            .premium-subtitle {
+                font-size: 16px;
+            }
+            
+            .plans-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .plan-card {
+                padding: 20px;
+            }
+            
+            .plan-title {
+                font-size: 20px;
+            }
+            
+            .plan-price {
+                font-size: 24px;
+            }
+            
+            .plan-features li {
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            
+            .features-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 20px;
+            }
+            
+            .feature-card {
+                padding: 20px;
+            }
+            
+            .feature-title {
+                font-size: 18px;
+            }
+            
+            .feature-description {
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 220px;
+            }
+            
+            .main-content {
+                margin-left: 220px;
+            }
+            
+            .premium-container {
+                padding: 15px;
+            }
+            
+            .premium-header {
+                padding: 15px;
+            }
+            
+            .premium-title {
+                font-size: 24px;
+            }
+            
+            .premium-subtitle {
+                font-size: 14px;
+            }
+            
+            .plans-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .plan-card {
+                padding: 15px;
+            }
+            
+            .plan-title {
+                font-size: 18px;
+            }
+            
+            .plan-price {
+                font-size: 22px;
+            }
+            
+            .plan-features li {
+                font-size: 13px;
+                margin-bottom: 8px;
+            }
+            
+            .features-container {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .feature-card {
+                padding: 15px;
+            }
+            
+            .feature-title {
+                font-size: 16px;
+            }
+            
+            .feature-description {
+                font-size: 13px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .premium-container {
+                padding: 10px;
+            }
+            
+            .premium-header {
+                padding: 10px;
+            }
+            
+            .premium-title {
+                font-size: 20px;
+            }
+            
+            .premium-subtitle {
+                font-size: 12px;
+            }
+            
+            .plans-container {
+                gap: 10px;
+            }
+            
+            .plan-card {
+                padding: 12px;
+            }
+            
+            .plan-title {
+                font-size: 16px;
+            }
+            
+            .plan-price {
+                font-size: 20px;
+            }
+            
+            .plan-features li {
+                font-size: 12px;
+                margin-bottom: 6px;
+            }
+            
+            .features-container {
+                gap: 10px;
+            }
+            
+            .feature-card {
+                padding: 12px;
+            }
+            
+            .feature-title {
+                font-size: 14px;
+            }
+            
+            .feature-description {
+                font-size: 12px;
+            }
+            
+            .subscribe-btn {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+        }
     </style>
 </head>
 <body>

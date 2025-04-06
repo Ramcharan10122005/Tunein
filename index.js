@@ -37,7 +37,6 @@ app.use(
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
-app.use(session({ secret: "yourSecretKey", resave: false, saveUninitialized: true }));
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -67,11 +66,11 @@ app.use(async (req, res, next) => {
     next();
 });
 
-let users = [
-    { email: "202311047@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" },
-    { email: "kundenaramcharan@gmail.com", username: "Ramcharan", password: "hashedPassword" },
-    { email: "202311063@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" }
-];
+// let users = [
+//     { email: "202311047@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" },
+//     { email: "kundenaramcharan@gmail.com", username: "Ramcharan", password: "hashedPassword" },
+//     { email: "202311063@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" }
+// ];
 let played_times = 0;
 let ads = [
     {
@@ -200,6 +199,20 @@ app.get("/signup", (req, res) => {
         errorMessage: "User with this username or email already exists",
     });
 });
+app.get("/random-song", async (req, res) => {
+    try {
+        const result = await db.query("SELECT title FROM songs ORDER BY RANDOM() LIMIT 1");
+        if (result.rows.length > 0) {
+            const randomSong = result.rows[0];
+            res.redirect(`/play/${encodeURIComponent(randomSong.title)}`);
+        } else {
+            res.redirect("/");
+        }
+    } catch (err) {
+        console.error("Error getting random song:", err);
+        res.redirect("/");
+    }
+})
 app.get("/reset", (req, res) => {
     res.render("reset", {
         error: false,
@@ -303,6 +316,17 @@ app.post("/login", (req, res, next) => {
         return res.redirect("/"); 
       });
     })(req, res, next);
+});
+// Add this route before the /reset POST route
+app.get("/check-email", async (req, res) => {
+    try {
+        const email = req.query.email;
+        const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+        res.json({ exists: result.rows.length > 0 });
+    } catch (err) {
+        console.error("Error checking email:", err);
+        res.status(500).json({ error: "Server error" });
+    }
 });
 // Password Reset
 app.post("/reset", async (req, res) => {
@@ -449,10 +473,87 @@ app.get("/like/:title", async (req, res) => {
     }
 });
 
-app.get("/admin", async (req, res) => {
-    const result = await db.query("SELECT * FROM songs ORDER BY id DESC");
-    res.render("add", { songs: result.rows });
+// Admin middleware to check if user is authenticated as admin
+const isAdmin = async (req, res, next) => {
+    if (!req.session.adminAuthenticated) {
+        return res.redirect('/admin/login');
+    }
+    next();
+};
+
+// Admin login page route
+app.get("/admin/login", (req, res) => {
+    res.render("admin-login", {
+        error: false,
+        errorMessage: ""
+    });
 });
+
+// Admin login route
+app.post("/admin/login", async (req, res) => {
+    try {
+        const { username, password } = req.body;
+        
+        // Check if admin exists
+        const result = await db.query("SELECT * FROM admin WHERE username = $1", [username]);
+        
+        if (result.rows.length === 0) {
+            return res.render("admin-login", {
+                error: true,
+                errorMessage: "Invalid username or password"
+            });
+        }
+
+        const admin = result.rows[0];
+        const validPassword = await bcrypt.compare(password, admin.password);
+
+        if (!validPassword) {
+            return res.render("admin-login", {
+                error: true,
+                errorMessage: "Invalid username or password"
+            });
+        }
+
+        // Set admin session
+        req.session.adminAuthenticated = true;
+        req.session.adminUsername = username;
+        
+        res.redirect("/admin");
+    } catch (err) {
+        console.error("Admin login error:", err);
+        res.render("admin-login", {
+            error: true,
+            errorMessage: "An error occurred during login"
+        });
+    }
+});
+
+// Admin logout route
+app.get("/admin/logout", (req, res) => {
+    req.session.adminAuthenticated = false;
+    req.session.adminUsername = null;
+    res.redirect("/admin/login");
+});
+
+// Modify the existing admin route to use the isAdmin middleware
+app.get("/admin", isAdmin, async (req, res) => {
+    try {
+        const songsResult = await db.query("SELECT * FROM songs ORDER BY id DESC");
+        const unreadFeedbackResult = await db.query("SELECT COUNT(*) FROM feedback WHERE is_read = false");
+        const feedbacksResult = await db.query("SELECT * FROM feedback ORDER BY created_at DESC");
+        
+        res.render("add", { 
+            songs: songsResult.rows,
+            adminUsername: req.session.adminUsername,
+            unreadFeedbackCount: parseInt(unreadFeedbackResult.rows[0].count),
+            feedbacks: feedbacksResult.rows
+        });
+    } catch (error) {
+        console.error("Error loading admin page:", error);
+        res.status(500).send("Error loading admin page");
+    }
+});
+
 app.post("/add-song", upload.fields([{ name: "song" }, { name: "cover" }]), async (req, res) => {
     try {
         const { title, artist, duration, language, genre, mood } = req.body;
@@ -477,6 +578,26 @@ app.post("/add-song", upload.fields([{ name: "song" }, { name: "cover" }]), asyn
         res.status(500).send("Error saving the song");
     }
 });
+
+// Route to delete a song
+app.post("/delete-song", isAdmin, async (req, res) => {
+    try {
+        const { songId } = req.body;
+        
+        // First delete from liked songs and playlists
+        await db.query("DELETE FROM liked WHERE songid = $1", [songId]);
+        await db.query("DELETE FROM playlists WHERE song_id = $1", [songId]);
+        
+        // Then delete the song itself
+        await db.query("DELETE FROM songs WHERE id = $1", [songId]);
+        
+        res.redirect("/admin");
+    } catch (error) {
+        console.error("Error deleting song:", error);
+        res.status(500).send("Error deleting the song");
+    }
+});
+
 // Route for playlist 
 app.get("/playlists", async(req, res) => {
     if (!req.session.userId) {
@@ -604,7 +725,44 @@ app.get("/playlists/songs", async (req, res) => {
 });
 
 // liked songs (Authenticated Route)
+app.get("/rand", async (req, res) => {
+    try {
+        const result = await db.query(
+            "SELECT s.title, s.artist, s.cover, s.song FROM liked l JOIN songs s ON l.songid = s.id WHERE l.userid = $1 ORDER BY RANDOM() LIMIT 1", 
+            [req.session.userId]
+        );
+        console.log(result.rows);
+        if (result.rows.length === 0) {
+            return res.status(404).send("Song not found");
+        }
 
+        const songdet = result.rows[0];
+
+        // Convert image and audio from `bytea` to Base64
+        const imageBase64 = `data:image/jpeg;base64,${songdet.cover.toString("base64")}`;
+        const audioBase64 = `data:audio/mpeg;base64,${songdet.song.toString("base64")}`;
+
+        // Increment played_times before checking for ad
+        played_times++;
+        console.log(played_times);
+        // Check if it's time to show an ad (every 5 clicks) and user is not premium
+        const shouldShowAd = !isPremium && played_times % 5 === 0;
+        const currentAd = shouldShowAd ? getNextAd() : null;
+
+        // Send response with song details and ad info
+        res.json({
+            title: songdet.title,
+            artist: songdet.artist,
+            image: imageBase64,
+            audio: audioBase64,
+            showAd: shouldShowAd,
+            ad: currentAd
+        });
+    } catch (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+    }
+});
 app.get("/song/:title", async (req, res) => {
     try {
         const title = decodeURIComponent(req.params.title);
@@ -715,7 +873,7 @@ app.get("/liked-songs", async (req, res) => {
                 seconds: song.seconds
             })
         }));
-
+        console.log(likedSongs.length);
         res.render("liked", {
             likedSongs: likedSongs,
             loggedInUserId: req.session.userId,
@@ -1318,20 +1476,20 @@ app.get("/profile", async (req, res) => {
             AND subscription_end_date > CURRENT_TIMESTAMP 
             ORDER BY subscription_end_date DESC 
             LIMIT 1`,
-            [user.id]
+            [req.session.userId]
         );
 
         // Get liked songs count
         const likedSongsResult = await db.query(
             "SELECT COUNT(*) FROM liked WHERE userid = $1",
-            [user.id]
+            [req.session.userId]
         );
         const likedSongsCount = likedSongsResult.rows[0].count;
 
-        // Get playlists count
+        // Get playlists count - Fixed column name from userid to user_id
         const playlistsResult = await db.query(
-            "SELECT COUNT(*) FROM playlists WHERE userid = $1",
-            [user.id]
+            "SELECT COUNT(*) FROM playlists WHERE user_id = $1",
+            [req.session.userId]
         );
         const playlistsCount = playlistsResult.rows[0].count;
 
@@ -1615,8 +1773,159 @@ app.post("/add-to-playlist", async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+// Route to get a random song from a specific playlist
+app.get("/playlist-rand", async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    try {
+        const playlistName = req.query.playlist;
+        if (!playlistName) {
+            return res.status(400).json({ error: "Playlist name is required" });
+        }
+
+        // Get a random song from the specified playlist
+        const result = await db.query(`
+            SELECT s.title, s.artist, s.cover, s.song 
+            FROM playlists p 
+            JOIN songs s ON p.song_id = s.id 
+            WHERE p.playlist_name = $1 AND p.user_id = $2 
+            ORDER BY RANDOM() 
+            LIMIT 1
+        `, [playlistName, req.session.userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "No songs found in playlist" });
+        }
+
+        const songdet = result.rows[0];
+
+        // Convert image and audio from `bytea` to Base64
+        const imageBase64 = `data:image/jpeg;base64,${songdet.cover.toString("base64")}`;
+        const audioBase64 = `data:audio/mpeg;base64,${songdet.song.toString("base64")}`;
+
+        // Increment played_times before checking for ad
+        played_times++;
+        
+        // Check if it's time to show an ad (every 5 clicks) and user is not premium
+        const shouldShowAd = !isPremium && played_times % 5 === 0;
+        const currentAd = shouldShowAd ? getNextAd() : null;
+
+        // Send response with song details and ad info
+        res.json({
+            title: songdet.title,
+            artist: songdet.artist,
+            image: imageBase64,
+            audio: audioBase64,
+            showAd: shouldShowAd,
+            ad: currentAd
+        });
+    } catch (err) {
+        console.error("Error getting random song from playlist:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+// Route to get a random song from a specific mood
+app.get("/mood-rand", async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ error: "User not authenticated" });
+    }
+
+    try {
+        const mood = req.query.mood;
+        if (!mood) {
+            return res.status(400).json({ error: "Mood parameter is required" });
+        }
+
+        // Get a random song from the specified mood
+        const result = await db.query(`
+            SELECT title, artist, cover, song 
+            FROM songs 
+            WHERE mood = $1 
+            ORDER BY RANDOM() 
+            LIMIT 1
+        `, [mood]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "No songs found for this mood" });
+        }
+
+        const songdet = result.rows[0];
+
+        // Convert image and audio from `bytea` to Base64
+        const imageBase64 = `data:image/jpeg;base64,${songdet.cover.toString("base64")}`;
+        const audioBase64 = `data:audio/mpeg;base64,${songdet.song.toString("base64")}`;
+
+        // Increment played_times before checking for ad
+        played_times++;
+        
+        // Check if it's time to show an ad (every 5 clicks) and user is not premium
+        const shouldShowAd = !isPremium && played_times % 5 === 0;
+        const currentAd = shouldShowAd ? getNextAd() : null;
+
+        // Send response with song details and ad info
+        res.json({
+            title: songdet.title,
+            artist: songdet.artist,
+            image: imageBase64,
+            audio: audioBase64,
+            showAd: shouldShowAd,
+            ad: currentAd
+        });
+    } catch (err) {
+        console.error("Error getting random song from mood:", err);
+        res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+app.post("/mark-feedback-read", isAdmin, async (req, res) => {
+    try {
+        const { feedbackId } = req.body;
+        
+        await db.query("UPDATE feedback SET is_read = true WHERE id = $1", [feedbackId]);
+        
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Error marking feedback as read:", error);
+        res.status(500).json({ success: false, error: "Error marking feedback as read" });
+    }
+});
+
+// Feedback routes
+app.get("/feedback", async (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect("/login");
+    }
+    
+    try {
+        const username = req.session.username;
+        res.render("feedback", { username });
+    } catch (error) {
+        console.error("Error rendering feedback page:", error);
+        res.status(500).send("Error loading feedback page");
+    }
+});
+
+app.post("/submit-feedback", async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).send("Unauthorized");
+    }
+    
+    try {
+        const { username, name, email, subject, message } = req.body;
+        
+        await db.query(
+            "INSERT INTO feedback (username, name, email, subject, message) VALUES ($1, $2, $3, $4, $5)",
+            [username, name, email, subject, message]
+        );
+        
+        res.redirect("/feedback?success=true");
+    } catch (error) {
+        console.error("Error submitting feedback:", error);
+        res.status(500).send("Error submitting feedback");
+    }
 });
 
 // Error handler middleware
@@ -1634,3 +1943,6 @@ app.use((req, res) => {
     });
 });
 
+app.listen(port, () => {
+    console.log(`Server running on http://localhost:${port}`);
+});

@@ -4,30 +4,77 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify 2FA</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Linking external CSS -->
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/main.css">
+    <script defer src="/script.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <style>
         .logo-text {
             font-family: 'Pacifico', cursive;
-            font-size: 36px; /* Adjust size */
+            font-size: 36px;
             font-weight: normal;
             text-align: center;
-            color: white; /* Adjust color as needed */
+            color: white;
+        }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading .button-text {
+            display: none;
+        }
+        .loading .loading-spinner {
+            display: inline-block;
         }
     </style>
 </head>
 <body>
-    <div class="auth-container">
-        <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo">
-        <h2 class="logo-text">TuneIn</h2>
-        <h2>Enter the OTP sent to your email</h2>
-        <form action="/verify-2fa" method="POST">
-            <div class="input-container">
+    <div class="login-background">
+        <div class="particles"></div>
+        <div class="sound-waves"></div>
+        <div class="ring"></div>
+        <div class="musical-note"></div>
+    </div>
+    <div class="auth-container animate-fade-in">
+        <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo" class="animate-slide-bottom" style="animation-delay: 0.1s;">
+        <h2 class="logo-text animate-slide-bottom" style="animation-delay: 0.2s;">TuneIn</h2>
+        <h2 class="animate-slide-bottom" style="animation-delay: 0.3s;">Enter the OTP sent to your email</h2>
+        <form action="/verify-2fa" method="POST" id="verifyForm">
+            <div class="input-container animate-slide-bottom" style="animation-delay: 0.4s;">
                 <input type="text" id="otp" name="otp" placeholder=" " required>
                 <label for="otp">OTP</label>
             </div>
-            <button type="submit">Verify</button>
+            <button type="submit" class="animate-slide-bottom hover-lift" style="animation-delay: 0.5s;" id="submitBtn">
+                <div class="button-content">
+                    <span class="button-text">Verify</span>
+                    <div class="loading-spinner"></div>
+                </div>
+            </button>
         </form>
+        <p class="animate-fade-in" style="animation-delay: 0.6s;"><a href="/login">Back to Login</a></p>
     </div>
+
+    <script>
+        document.getElementById('verifyForm').addEventListener('submit', function() {
+            const button = document.getElementById('submitBtn');
+            button.classList.add('loading');
+            button.disabled = true;
+        });
+    </script>
 </body>
 </html>

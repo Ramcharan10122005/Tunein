@@ -590,6 +590,202 @@
             font-weight: bold;
             letter-spacing: 2px;
         }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .sidebar {
+                width: 220px;
+            }
+            
+            .sidebar.closed {
+                transform: translateX(-220px);
+            }
+            
+            .main-content {
+                margin-left: 220px;
+            }
+            
+            .main-content.sidebar-closed {
+                margin-left: 0;
+            }
+            
+            .playlist-header {
+                padding: 20px;
+            }
+            
+            .playlist-title {
+                font-size: 24px;
+            }
+            
+            .playlist-description {
+                font-size: 14px;
+            }
+            
+            .song-item {
+                padding: 10px 15px;
+            }
+            
+            .song-number {
+                width: 30px;
+                font-size: 14px;
+            }
+            
+            .song-title {
+                font-size: 14px;
+            }
+            
+            .song-artist {
+                font-size: 12px;
+            }
+            
+            .song-duration {
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 200px;
+            }
+            
+            .sidebar.closed {
+                transform: translateX(-200px);
+            }
+            
+            .main-content {
+                margin-left: 200px;
+            }
+            
+            .main-content.sidebar-closed {
+                margin-left: 0;
+            }
+            
+            .playlist-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .playlist-info {
+                width: 100%;
+            }
+            
+            .playlist-actions {
+                width: 100%;
+                justify-content: flex-start;
+            }
+            
+            .song-item {
+                padding: 8px 12px;
+            }
+            
+            .song-number {
+                width: 25px;
+                font-size: 12px;
+            }
+            
+            .song-title {
+                font-size: 13px;
+            }
+            
+            .song-artist {
+                font-size: 11px;
+            }
+            
+            .song-duration {
+                font-size: 11px;
+            }
+            
+            .song-actions {
+                gap: 8px;
+            }
+            
+            .song-actions button {
+                width: 30px;
+                height: 30px;
+            }
+            
+            .song-actions i {
+                width: 16px;
+                height: 16px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+                transform: translateX(-100%);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .toggle-sidebar {
+                display: block;
+            }
+            
+            .playlist-header {
+                padding: 15px;
+            }
+            
+            .playlist-title {
+                font-size: 20px;
+            }
+            
+            .playlist-description {
+                font-size: 12px;
+            }
+            
+            .playlist-actions {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .playlist-actions button {
+                padding: 8px 12px;
+                font-size: 12px;
+            }
+            
+            .song-item {
+                padding: 8px 10px;
+            }
+            
+            .song-number {
+                width: 20px;
+                font-size: 11px;
+            }
+            
+            .song-title {
+                font-size: 12px;
+            }
+            
+            .song-artist {
+                font-size: 10px;
+            }
+            
+            .song-duration {
+                font-size: 10px;
+            }
+            
+            .song-actions {
+                gap: 5px;
+            }
+            
+            .song-actions button {
+                width: 25px;
+                height: 25px;
+            }
+            
+            .song-actions i {
+                width: 14px;
+                height: 14px;
+            }
+        }
     </style>
 </head>
 

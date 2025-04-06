@@ -214,6 +214,36 @@
             display: inline-block;
         }
 
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .action-button {
+            background: #b62020;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            transition: background-color 0.3s ease;
+        }
+
+        .action-button:hover {
+            background: #d42a2a;
+        }
+
+        .action-button i {
+            width: 20px;
+            height: 20px;
+            stroke-width: 1.5;
+        }
+
         .username-edit {
             margin-bottom: 30px;
         }
@@ -318,6 +348,91 @@
             .main-content.sidebar-open {
                 margin-left: 0;
             }
+            
+            .profile-header {
+                flex-direction: column;
+                gap: 15px;
+                align-items: flex-start;
+                padding: 20px;
+            }
+            
+            .profile-header h2 {
+                font-size: 28px;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .profile-section {
+                padding: 20px;
+            }
+            
+            .action-buttons {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .action-button {
+                width: 100%;
+                justify-content: center;
+            }
+            
+            .username-edit form {
+                flex-direction: column;
+                width: 100%;
+            }
+            
+            .username-edit input {
+                width: 100%;
+                margin-right: 0;
+                margin-bottom: 10px;
+            }
+            
+            .username-edit button {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            header {
+                padding: 10px 15px;
+            }
+            
+            .tunein {
+                font-size: 20px;
+            }
+            
+            .user-container {
+                padding: 6px 12px;
+            }
+            
+            .user-avatar {
+                width: 24px;
+                height: 24px;
+                font-size: 12px;
+            }
+            
+            .user-name {
+                font-size: 12px;
+            }
+            
+            .main-content {
+                padding: 70px 15px 15px;
+            }
+            
+            .profile-header h2 {
+                font-size: 24px;
+            }
+            
+            .stat-number {
+                font-size: 28px;
+            }
+            
+            .profile-section h3 {
+                font-size: 20px;
+            }
         }
 
         /* User Container Styles */
@@ -353,6 +468,189 @@
             color: white;
             font-size: 14px;
             font-weight: 500;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 1024px) {
+            .profile-container {
+                max-width: 95%;
+            }
+            
+            .profile-header {
+                padding: 25px;
+                flex-direction: column;
+                gap: 20px;
+                text-align: center;
+            }
+            
+            .profile-header h2 {
+                font-size: 28px;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+            }
+            
+            .stat-card {
+                padding: 20px;
+            }
+            
+            .stat-number {
+                font-size: 32px;
+            }
+            
+            .stat-label {
+                font-size: 13px;
+            }
+            
+            .playlist-grid {
+                grid-template-columns: repeat(3, 1fr);
+                gap: 15px;
+            }
+            
+            .playlist-card {
+                padding: 15px;
+            }
+            
+            .playlist-card img {
+                width: 120px;
+                height: 120px;
+            }
+            
+            .playlist-card h3 {
+                font-size: 16px;
+            }
+            
+            .playlist-card p {
+                font-size: 12px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                width: 220px;
+                left: -220px;
+            }
+            
+            .main-content.sidebar-open {
+                margin-left: 220px;
+            }
+            
+            .profile-header {
+                padding: 20px;
+            }
+            
+            .profile-header h2 {
+                font-size: 24px;
+            }
+            
+            .stats-container {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-number {
+                font-size: 28px;
+            }
+            
+            .stat-label {
+                font-size: 12px;
+            }
+            
+            .playlist-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 12px;
+            }
+            
+            .playlist-card {
+                padding: 12px;
+            }
+            
+            .playlist-card img {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .playlist-card h3 {
+                font-size: 14px;
+            }
+            
+            .playlist-card p {
+                font-size: 11px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .sidebar {
+                width: 100%;
+                left: -100%;
+            }
+            
+            .main-content.sidebar-open {
+                margin-left: 0;
+            }
+            
+            .profile-header {
+                padding: 15px;
+            }
+            
+            .profile-header h2 {
+                font-size: 20px;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .stat-card {
+                padding: 12px;
+            }
+            
+            .stat-number {
+                font-size: 24px;
+            }
+            
+            .stat-label {
+                font-size: 11px;
+            }
+            
+            .playlist-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .playlist-card {
+                padding: 10px;
+            }
+            
+            .playlist-card img {
+                width: 80px;
+                height: 80px;
+            }
+            
+            .playlist-card h3 {
+                font-size: 13px;
+            }
+            
+            .playlist-card p {
+                font-size: 10px;
+            }
+            
+            .search-container {
+                max-width: 100%;
+                margin: 0 10px;
+            }
+            
+            .search-bar {
+                padding: 8px 35px;
+                font-size: 12px;
+            }
         }
     </style>
 </head>
@@ -443,19 +741,25 @@
             </div>
 
             <div class="profile-section">
-                <h3>Account Details</h3>
-                <form id="usernameForm" action="/update-username" method="POST">
-                    <div class="username-edit">
-                        <label>Username</label>
-                        <div style="display: flex; gap: 10px;">
-                            <input type="text" name="newUsername" value="<%= user.username %>" required>
-                            <button type="submit">
-                                <i data-lucide="check"></i>
-                                Update
-                            </button>
-                        </div>
-                    </div>
-                </form>
+                <h3>Profile Settings</h3>
+                
+                <div class="action-buttons">
+                    <a href="/feedback" class="action-button">
+                        <i data-lucide="message-square"></i>
+                        Send Feedback
+                    </a>
+                </div>
+                
+                <div class="username-edit">
+                    <label>Username</label>
+                    <form action="/update-username" method="POST" style="display: flex; gap: 10px;">
+                        <input type="text" name="newUsername" value="<%= user.username %>" required>
+                        <button type="submit">
+                            <i data-lucide="check"></i>
+                            Update
+                        </button>
+                    </form>
+                </div>
 
                 <div class="profile-info">
                     <p>

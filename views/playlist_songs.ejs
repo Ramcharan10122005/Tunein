@@ -849,7 +849,6 @@
             <span id="progress"></span>
         </div>
         <div class="controls">
-            <button disabled><i data-lucide="repeat"></i></button>
             <button disabled><i data-lucide="heart"></i></button>
             <div class="volume-container">
                 <button id="volume-btn" disabled><i data-lucide="volume-2"></i></button>
@@ -1142,6 +1141,49 @@
                     console.error('Error notifying backend about song play:', error);
                 });
         }
+
+        function redirecttorand() {
+            // Get the current playlist name from the URL or session
+            const urlParams = new URLSearchParams(window.location.search);
+            const playlistName = urlParams.get('name');
+            
+            if (!playlistName) {
+                console.error('No playlist name found');
+                return;
+            }
+
+            // Fetch a random song from the playlist using the new endpoint
+            fetch(`/playlist-rand?playlist=${encodeURIComponent(playlistName)}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    console.log("Song data received:", data);
+                    
+                    // Play the song using the existing playSong function
+                    playSong(data.title, data.audio, data.image, data.artist);
+                })
+                .catch(error => {
+                    console.error("Error fetching song:", error);
+                    alert("Error playing song. Please try again.");
+                });
+        }
+
+        // Add event listeners for next/previous buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            const nextBtn = document.getElementById('next');
+            const prevBtn = document.getElementById('prev');
+
+            nextBtn.addEventListener('click', redirecttorand);
+            prevBtn.addEventListener('click', redirecttorand);
+        });
     </script>
 </body>
 

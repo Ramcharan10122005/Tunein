@@ -532,7 +532,6 @@
         </div>
         <div class="progress-bar"><span id="progress"></span></div>
         <div class="controls">
-            <button disabled><i data-lucide="repeat"></i></button>
             <button disabled><i data-lucide="heart"></i></button>
             <div class="volume-container">
                 <button id="volume-btn"><i data-lucide="volume-2"></i></button>
@@ -948,6 +947,51 @@
                 // Reset progress bar
                 progressBar.style.width = '0%';
             });
+            
+            function redirecttorand() {
+                // Get the current mood from the URL
+                const urlParams = new URLSearchParams(window.location.search);
+                const mood = urlParams.get('mood');
+                
+                if (!mood) {
+                    console.error('No mood found');
+                    return;
+                }
+
+                // Fetch a random song from the mood using the new endpoint
+                fetch(`/mood-rand?mood=${encodeURIComponent(mood)}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Network response was not ok');
+                        }
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.error) {
+                            throw new Error(data.error);
+                        }
+                        
+                        console.log("Song data received:", data);
+                        
+                        // Play the song using the existing playSong function
+                        playSong(data.title, data.audio, data.image, data.artist);
+                    })
+                    .catch(error => {
+                        console.error("Error fetching song:", error);
+                        alert("Error playing song. Please try again.");
+                    });
+            }
+
+            // Add event listeners for next/previous buttons
+            const nextBtn = document.getElementById('next');
+            const prevBtn = document.getElementById('prev');
+
+            if (nextBtn) {
+                nextBtn.addEventListener('click', redirecttorand);
+            }
+            if (prevBtn) {
+                prevBtn.addEventListener('click', redirecttorand);
+            }
             
             // Update track info when metadata is loaded
             audioPlayer.addEventListener('loadedmetadata', () => {

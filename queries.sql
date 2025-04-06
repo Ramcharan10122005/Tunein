@@ -47,6 +47,22 @@ CREATE TABLE playlists (
     song_id INTEGER
 );
 
+-- Create feedback table
+CREATE TABLE IF NOT EXISTS feedback (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(100) NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    subject VARCHAR(200) NOT NULL,
+    message TEXT NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    is_read BOOLEAN DEFAULT FALSE
+);
+
+-- Create index for faster queries
+CREATE INDEX IF NOT EXISTS idx_feedback_created_at ON feedback(created_at);
+CREATE INDEX IF NOT EXISTS idx_feedback_is_read ON feedback(is_read);
+
 
 
 

@@ -4,15 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password</title>
-    <link rel="stylesheet" href="styles.css"> <!-- Linking external CSS -->
+    <link rel="stylesheet" href="/styles.css">
+    <link rel="stylesheet" href="/main.css">
+    <script defer src="/script.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <style>
         .logo-text {
             font-family: 'Pacifico', cursive;
-            font-size: 36px; /* Adjust size */
+            font-size: 36px;
             font-weight: normal;
             text-align: center;
-            color: white; /* Adjust color as needed */
+            color: white;
         }
         .error-message {
             background-color: #ffebee;
@@ -22,27 +24,151 @@
             padding: 10px;
             margin-bottom: 15px;
             display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
         }
-        .error-message.user-exists {
+        .error-message.show {
             display: block;
+            opacity: 1;
+        }
+        .loading-spinner {
+            display: none;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .button-content {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .loading .button-text {
+            display: none;
+        }
+        .loading .loading-spinner {
+            display: inline-block;
+        }
+        .input-container.error input {
+            border-color: #d32f2f;
+        }
+        .input-container.error label {
+            color: #d32f2f;
         }
     </style>
 </head>
 <body>
-    <div class="auth-container">
-        <div class="error-message <%= error && errorType === 'user-exists' ? 'user-exists' : '' %>">
-            <%= error && errorType === 'user-exists' ? errorMessage : '' %>
-        </div>
-        <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo">
-        <h2 class="logo-text">TuneIn</h2>
-        <h2>Reset Password</h2>
-        <form action="/reset" method="POST">
-            <div class="input-container">
+    <div class="login-background">
+        <div class="particles"></div>
+        <div class="sound-waves"></div>
+        <div class="ring"></div>
+        <div class="musical-note"></div>
+    </div>
+    <div class="auth-container animate-fade-in">
+        <div class="error-message" id="errorMessage"></div>
+        <img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo" class="animate-slide-bottom" style="animation-delay: 0.1s;">
+        <h2 class="logo-text animate-slide-bottom" style="animation-delay: 0.2s;">TuneIn</h2>
+        <h2 class="animate-slide-bottom" style="animation-delay: 0.3s;">Reset Password</h2>
+        <form action="/reset" method="POST" id="resetForm">
+            <div class="input-container animate-slide-bottom" style="animation-delay: 0.4s;" id="emailContainer">
                 <input type="email" id="email" name="email" placeholder=" " required>
                 <label for="email">Email</label>
             </div>
-            <button type="submit">Send OTP</button>
+            <button type="submit" class="animate-slide-bottom hover-lift" style="animation-delay: 0.5s;" id="submitBtn">
+                <div class="button-content">
+                    <span class="button-text">Send OTP</span>
+                    <div class="loading-spinner"></div>
+                </div>
+            </button>
         </form>
+        <p class="animate-fade-in" style="animation-delay: 0.6s;"><a href="/login">Back to Login</a></p>
     </div>
+
+    <script>
+        const form = document.getElementById('resetForm');
+        const emailInput = document.getElementById('email');
+        const emailContainer = document.getElementById('emailContainer');
+        const errorMessage = document.getElementById('errorMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        let emailTimeout;
+
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+            emailContainer.classList.add('error');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('show');
+            emailContainer.classList.remove('error');
+        }
+
+        function validateEmail(email) {
+            return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+        }
+
+        emailInput.addEventListener('input', function() {
+            clearTimeout(emailTimeout);
+            hideError();
+            
+            if (this.value && validateEmail(this.value)) {
+                emailTimeout = setTimeout(async () => {
+                    try {
+                        const response = await fetch(`/check-email?email=${encodeURIComponent(this.value)}`);
+                        const data = await response.json();
+                        
+                        if (!data.exists) {
+                            showError('This email is not registered with us');
+                            submitBtn.disabled = true;
+                        } else {
+                            hideError();
+                            submitBtn.disabled = false;
+                        }
+                    } catch (err) {
+                        console.error('Error checking email:', err);
+                    }
+                }, 500); // Debounce time of 500ms
+            }
+        });
+
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!emailInput.value) {
+                showError('Please enter your email');
+                return;
+            }
+
+            if (!validateEmail(emailInput.value)) {
+                showError('Please enter a valid email address');
+                return;
+            }
+
+            try {
+                const response = await fetch(`/check-email?email=${encodeURIComponent(emailInput.value)}`);
+                const data = await response.json();
+                
+                if (!data.exists) {
+                    showError('This email is not registered with us');
+                    return;
+                }
+
+                // If email exists, proceed with form submission
+                submitBtn.classList.add('loading');
+                submitBtn.disabled = true;
+                form.submit();
+            } catch (err) {
+                console.error('Error checking email:', err);
+                showError('An error occurred. Please try again.');
+            }
+        });
+    </script>
 </body>
 </html>
