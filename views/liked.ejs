@@ -608,6 +608,51 @@
             font-weight: bold;
             letter-spacing: 2px;
         }
+
+        .ad-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ad-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .ad-image {
+            width: 100%;
+            height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .ad-title {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .ad-timer {
+            color: #b3b3b3;
+            font-size: 18px;
+            text-align: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 
@@ -866,6 +911,17 @@
         </div>
     </div>
 
+    <% if (locals.showAd && locals.ad) { %>
+    <div class="ad-container" id="adContainer" style="display: block;">
+        <div class="ad-content">
+            <img src="<%= ad.image %>" alt="Advertisement" class="ad-image">
+            <div class="ad-title"><%= ad.title %></div>
+            <audio id="ad-audio" src="<%= ad.audio %>" preload="auto" autoplay></audio>
+            <div class="ad-timer">Ad will end in <span id="adCountdown">30</span> seconds</div>
+        </div>
+    </div>
+    <% } %>
+
     <script>
         let audio, playIcon, progressBar, volumeSlider;
 
@@ -880,6 +936,94 @@
             volumeSlider = document.getElementById("volume-input");
             const volumeBtn = document.getElementById("volume-btn");
             const volumeContainer = document.getElementById("volume-slider");
+
+            // Define closeAd function globally
+            window.closeAd = function() {
+                console.log("Closing ad automatically");
+                if (window.adCountdownInterval) {
+                    clearInterval(window.adCountdownInterval);
+                }
+                
+                // Hide the ad container
+                const adContainer = document.getElementById('adContainer');
+                if (adContainer) {
+                    adContainer.style.display = 'none';
+                }
+                
+                // Pause the ad audio
+                const adAudio = document.getElementById('ad-audio');
+                if (adAudio) {
+                    adAudio.pause();
+                }
+                
+                // Resume the main audio and ensure it plays
+                if (audio) {
+                    console.log("Resuming main audio");
+                    
+                    // Set the play icon to pause since we're about to play
+                    const playIcon = document.getElementById('play-icon');
+                    if (playIcon) {
+                        playIcon.setAttribute("data-lucide", "pause");
+                        lucide.createIcons();
+                    }
+                    
+                    // Force play the audio
+                    setTimeout(() => {
+                        console.log("Attempting to play main audio after ad");
+                        audio.play().then(() => {
+                            console.log("Main audio playing successfully after ad");
+                        }).catch(error => {
+                            console.error("Error playing main audio after ad:", error);
+                            // If autoplay fails, try to play on next user interaction
+                            document.addEventListener('click', function playOnClick() {
+                                console.log("User clicked, trying to play main audio");
+                                audio.play().catch(err => {
+                                    console.error("Still failed to play main audio:", err);
+                                });
+                                document.removeEventListener('click', playOnClick);
+                            }, { once: true });
+                        });
+                    }, 500); // Small delay to ensure ad is fully closed
+                }
+            };
+
+            // Function to handle ad audio playback
+            window.handleAdAudio = function(adAudio) {
+                if (!adAudio) return;
+                
+                console.log("Setting up ad audio handling");
+                
+                // Add event listener for when audio ends
+                adAudio.addEventListener('ended', function() {
+                    console.log("Ad audio ended naturally, closing ad");
+                    window.closeAd();
+                });
+                
+                // Add event listener for when audio is loaded
+                adAudio.addEventListener('loadedmetadata', function() {
+                    console.log("Ad audio loaded, duration:", adAudio.duration);
+                    
+                    // Set a timeout to close the ad based on the actual audio duration
+                    // Add a small buffer (1 second) to ensure the audio has time to end
+                    const durationMs = (adAudio.duration * 1000) + 1000;
+                    console.log("Setting timeout to close ad after", durationMs, "ms");
+                    
+                    setTimeout(function() {
+                        console.log("Ad duration timeout reached, closing ad");
+                        window.closeAd();
+                    }, durationMs);
+                });
+                
+                // Also set a maximum timeout of 35 seconds as a fallback
+                setTimeout(function() {
+                    console.log("Ad maximum duration timeout reached, closing ad");
+                    window.closeAd();
+                }, 35000);
+            };
+
+            // Initialize ad if present
+            console.log("Checking for ad elements...");
+            initializeAd();
 
             // Initialize audio player
             if (audio) {
@@ -990,6 +1134,8 @@
         }
 
         function play(title) {
+            console.log("Playing song:", title);
+            
             // Get the song details from the clicked row
             const row = event.currentTarget;
             const cover = row.querySelector('.song-cover').style.backgroundImage.slice(4, -1).replace(/"/g, "");
@@ -1027,17 +1173,27 @@
                         throw new Error(data.error);
                     }
                     
+                    console.log("Song data received:", data);
+                    
                     // Update audio source
                     audio.src = data.audio;
                     audio.load();
                     
-                    // Start playing
-                    audio.play().catch(error => {
-                        console.error("Error playing audio:", error);
-                        // Reset to play icon if there's an error
-                        playIcon.setAttribute("data-lucide", "play");
-                        lucide.createIcons();
-                    });
+                    // Handle ad if present
+                    if (data.showAd && data.ad) {
+                        console.log("Ad should be shown:", data.ad);
+                        // Don't start playing the song yet, wait for the ad to finish
+                        showAd(data.ad);
+                    } else {
+                        // Start playing if no ad
+                        console.log("No ad to show, starting song playback");
+                        audio.play().catch(error => {
+                            console.error("Error playing audio:", error);
+                            // Reset to play icon if there's an error
+                            playIcon.setAttribute("data-lucide", "play");
+                            lucide.createIcons();
+                        });
+                    }
                 })
                 .catch(error => {
                     console.error("Error fetching song:", error);
@@ -1046,6 +1202,181 @@
                     playIcon.setAttribute("data-lucide", "play");
                     lucide.createIcons();
                 });
+        }
+
+        // Function to initialize ad on page load
+        function initializeAd() {
+            console.log("Initializing ad...");
+            const adContainer = document.getElementById('adContainer');
+            const adAudio = document.getElementById('ad-audio');
+            const adCountdown = document.getElementById('adCountdown');
+            
+            console.log("Ad container:", adContainer);
+            console.log("Ad audio:", adAudio);
+            console.log("Ad countdown:", adCountdown);
+            
+            if (adContainer && adAudio && adCountdown) {
+                console.log('Ad elements found, initializing ad');
+                let timeLeft = 30;
+                
+                // Make sure the ad container is visible
+                adContainer.style.display = 'block';
+                
+                // Force pause any background music
+                if (audio) {
+                    console.log("Force pausing main audio during ad initialization");
+                    audio.pause();
+                    audio.currentTime = 0; // Reset the current time
+                    console.log("Main audio paused and reset");
+                }
+                
+                // Set volume to match main audio
+                if (audio && volumeSlider) {
+                    adAudio.volume = audio.volume;
+                    console.log("Setting ad audio volume to:", adAudio.volume);
+                }
+                
+                // Set autoplay and remove controls
+                adAudio.autoplay = true;
+                adAudio.controls = false;
+                
+                // Ensure ad audio plays
+                console.log("Loading ad audio");
+                adAudio.load();
+                
+                // Set up ad audio handling
+                window.handleAdAudio(adAudio);
+                
+                // Force play the ad audio
+                console.log("Force playing ad audio");
+                setTimeout(() => {
+                    adAudio.play().then(() => {
+                        console.log("Ad audio playing successfully");
+                    }).catch(error => {
+                        console.error("Error playing ad audio:", error);
+                        // Try playing again after user interaction
+                        document.addEventListener('click', function playOnClick() {
+                            console.log("User clicked, trying to play ad audio again");
+                            adAudio.play().catch(err => {
+                                console.error("Still failed to play ad audio:", err);
+                            });
+                            document.removeEventListener('click', playOnClick);
+                        }, { once: true });
+                    });
+                }, 500);
+                
+                // Clear any existing interval
+                if (window.adCountdownInterval) {
+                    clearInterval(window.adCountdownInterval);
+                }
+                
+                // Start the countdown
+                window.adCountdownInterval = setInterval(() => {
+                    timeLeft--;
+                    console.log("Ad countdown:", timeLeft);
+                    if (adCountdown) {
+                        adCountdown.textContent = timeLeft;
+                    }
+                    
+                    if (timeLeft <= 0) {
+                        console.log("Ad countdown reached zero, automatically closing ad");
+                        clearInterval(window.adCountdownInterval);
+                        window.closeAd();
+                    }
+                }, 1000);
+            } else {
+                console.log('Ad elements not found');
+            }
+        }
+        
+        // Function to show ad when a song is played
+        function showAd(adData) {
+            console.log("Showing ad with data:", adData);
+            
+            // Create ad container if it doesn't exist
+            let adContainer = document.getElementById('adContainer');
+            if (!adContainer) {
+                console.log("Creating new ad container");
+                adContainer = document.createElement('div');
+                adContainer.id = 'adContainer';
+                adContainer.className = 'ad-container';
+                document.body.appendChild(adContainer);
+            }
+            
+            // Create ad content
+            adContainer.innerHTML = `
+                <div class="ad-content">
+                    <img src="${adData.image}" alt="Advertisement" class="ad-image">
+                    <div class="ad-title">${adData.title}</div>
+                    <audio id="ad-audio" src="${adData.audio}" preload="auto"></audio>
+                    <div id="adCountdown" class="ad-timer">30</div>
+                </div>
+            `;
+            
+            // Get the ad audio element
+            const adAudio = document.getElementById('ad-audio');
+            const adCountdown = document.getElementById('adCountdown');
+            
+            // Make the ad container visible
+            adContainer.style.display = 'block';
+            
+            // Pause the main audio
+            if (audio) {
+                console.log("Pausing main audio for ad");
+                audio.pause();
+            }
+            
+            // Set volume to match main audio
+            if (audio && volumeSlider) {
+                adAudio.volume = audio.volume;
+                console.log("Setting ad audio volume to:", adAudio.volume);
+            }
+            
+            // Set autoplay and remove controls
+            adAudio.autoplay = true;
+            adAudio.controls = false;
+            
+            // Set up ad audio handling
+            window.handleAdAudio(adAudio);
+            
+            // Force play the ad audio
+            console.log("Force playing ad audio");
+            setTimeout(() => {
+                adAudio.play().then(() => {
+                    console.log("Ad audio playing successfully");
+                }).catch(error => {
+                    console.error("Error playing ad audio:", error);
+                    // Try playing again after user interaction
+                    document.addEventListener('click', function playOnClick() {
+                        console.log("User clicked, trying to play ad audio again");
+                        adAudio.play().catch(err => {
+                            console.error("Still failed to play ad audio:", err);
+                        });
+                        document.removeEventListener('click', playOnClick);
+                    }, { once: true });
+                });
+            }, 500);
+            
+            // Clear any existing interval
+            if (window.adCountdownInterval) {
+                clearInterval(window.adCountdownInterval);
+            }
+            
+            // Start the countdown
+            let timeLeft = 30;
+            window.adCountdownInterval = setInterval(() => {
+                timeLeft--;
+                console.log("Ad countdown:", timeLeft);
+                if (adCountdown) {
+                    adCountdown.textContent = timeLeft;
+                }
+                
+                if (timeLeft <= 0) {
+                    console.log("Ad countdown reached zero, automatically closing ad");
+                    clearInterval(window.adCountdownInterval);
+                    window.closeAd();
+                }
+            }, 1000);
         }
 
         function updateVolumeSlider(value) {

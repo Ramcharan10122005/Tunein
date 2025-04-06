@@ -543,32 +543,42 @@ app.get("/playlists/songs", async (req, res) => {
 // liked songs (Authenticated Route)
 
 app.get("/song/:title", async (req, res) => {
-    if (!req.session.userId) {
-        return res.status(401).json({ error: "User not authenticated" });
-    }
     try {
         const title = decodeURIComponent(req.params.title);
         const lowercaseTitle = title.toLowerCase();
-        console.log(title); 
+        console.log(title);
+
         const result = await db.query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [lowercaseTitle]);
-        
+
         if (result.rows.length === 0) {
-            return res.status(404).json({ error: "Song not found" });
+            return res.status(404).send("Song not found");
         }
 
         const songdet = result.rows[0];
+
+        // Convert image and audio from `bytea` to Base64
         const imageBase64 = `data:image/jpeg;base64,${songdet.cover.toString("base64")}`;
         const audioBase64 = `data:audio/mpeg;base64,${songdet.song.toString("base64")}`;
 
+        // Increment played_times before checking for ad
+        played_times++;
+        console.log(played_times);
+        // Check if it's time to show an ad (every 5 clicks)
+        const shouldShowAd = played_times % 5 === 0;
+        const currentAd = shouldShowAd ? getNextAd() : null;
+
+        // Send response with song details and ad info
         res.json({
             title: songdet.title,
             artist: songdet.artist,
             image: imageBase64,
-            audio: audioBase64
+            audio: audioBase64,
+            showAd: shouldShowAd,
+            ad: currentAd
         });
     } catch (err) {
-        console.error("Error fetching song:", err);
-        res.status(500).json({ error: "Internal server error" });
+        console.error(err);
+        res.status(500).send("Internal Server Error");
     }
 });
 app.post("/remove-liked", async (req, res) => {
@@ -739,6 +749,30 @@ app.get("/play/:title", async (req, res) => {
         res.status(500).send("Internal Server Error");
     }
 });
+
+// Add endpoint to get the next ad
+app.get("/api/next-ad", (req, res) => {
+    const ad = getNextAd();
+    res.json(ad);
+});
+
+// Add endpoint to handle song plays and return ad information
+app.post("/api/song-played", (req, res) => {
+    // Increment the played_times counter
+    played_times++;
+    
+    // Check if it's time to show an ad (after 5 songs)
+    const shouldShowAd = played_times % 5 === 0;
+    const currentAd = shouldShowAd ? getNextAd() : null;
+    
+    // Return response with ad information
+    res.json({
+        showAd: shouldShowAd,
+        ad: currentAd,
+        playedTimes: played_times
+    });
+});
+
 passport.use(
     "local",
     new Strategy(async function verify(username, password, cb) {
