@@ -419,77 +419,65 @@
     </div>
 
     <div class="premium-container">
-        <div class="premium-header">
-            <h1>Upgrade to Premium</h1>
-            <p>Get unlimited access to all features and enjoy an ad-free experience</p>
-        </div>
-
-        <div class="plans-container">
-            <div class="plan-card">
-                <h3 class="plan-name">Monthly</h3>
-                <div class="plan-price">₹199<span>/month</span></div>
-                <ul class="plan-features">
-                    <li><i data-lucide="check"></i> Ad-free listening</li>
-                    <li><i data-lucide="check"></i> Unlimited skips</li>
-                    <li><i data-lucide="check"></i> High quality audio</li>
-                    <li><i data-lucide="check"></i> Offline downloads</li>
-                </ul>
-                <button class="subscribe-btn" onclick="handleSubscription('monthly')">Subscribe Now</button>
+        <% if (user && user.is_premium) { %>
+            <div class="premium-header">
+                <h1>Premium Member</h1>
+                <p>Thank you for being a premium member!</p>
             </div>
-
-            <div class="plan-card popular">
-                <div class="popular-badge">Most Popular</div>
-                <h3 class="plan-name">Yearly</h3>
-                <div class="plan-price">₹1,999<span>/year</span></div>
-                <ul class="plan-features">
-                    <li><i data-lucide="check"></i> Ad-free listening</li>
-                    <li><i data-lucide="check"></i> Unlimited skips</li>
-                    <li><i data-lucide="check"></i> High quality audio</li>
-                    <li><i data-lucide="check"></i> Offline downloads</li>
-                    <li><i data-lucide="check"></i> Save 16%</li>
-                </ul>
-                <button class="subscribe-btn" onclick="handleSubscription('yearly')">Subscribe Now</button>
-            </div>
-
-            <div class="plan-card">
-                <h3 class="plan-name">Family</h3>
-                <div class="plan-price">₹399<span>/month</span></div>
-                <ul class="plan-features">
-                    <li><i data-lucide="check"></i> Up to 6 accounts</li>
-                    <li><i data-lucide="check"></i> Ad-free listening</li>
-                    <li><i data-lucide="check"></i> Unlimited skips</li>
-                    <li><i data-lucide="check"></i> High quality audio</li>
-                    <li><i data-lucide="check"></i> Offline downloads</li>
-                </ul>
-                <button class="subscribe-btn" onclick="handleSubscription('family')">Subscribe Now</button>
-            </div>
-        </div>
-
-        <div class="benefits-section">
-            <h2>Premium Benefits</h2>
-            <div class="benefits-grid">
-                <div class="benefit-card">
-                    <i data-lucide="music"></i>
-                    <h3>Ad-Free Listening</h3>
-                    <p>Enjoy uninterrupted music without any advertisements</p>
-                </div>
-                <div class="benefit-card">
-                    <i data-lucide="skip-forward"></i>
-                    <h3>Unlimited Skips</h3>
-                    <p>Skip as many songs as you want, whenever you want</p>
-                </div>
-                <div class="benefit-card">
-                    <i data-lucide="download"></i>
-                    <h3>Offline Mode</h3>
-                    <p>Download your favorite songs and listen offline</p>
-                </div>
-                <div class="benefit-card">
-                    <i data-lucide="headphones"></i>
-                    <h3>High Quality Audio</h3>
-                    <p>Experience crystal clear sound with high quality audio</p>
+            <div class="benefits-section" style="margin-top: 40px;">
+                <div class="benefit-card" style="max-width: 600px; margin: 0 auto;">
+                    <i data-lucide="crown"></i>
+                    <h3>Active Premium Subscription</h3>
+                    <% if (subscriptionDetails && subscriptionDetails.plan_type && subscriptionDetails.subscription_end_date) { %>
+                        <p>Plan Type: <%= subscriptionDetails.plan_type.charAt(0).toUpperCase() + subscriptionDetails.plan_type.slice(1) %></p>
+                        <p>Valid Until: <%= new Date(subscriptionDetails.subscription_end_date).toLocaleDateString() %></p>
+                    <% } %>
+                    <p>You are currently enjoying:</p>
+                    <ul style="list-style: none; padding: 0; margin: 20px 0;">
+                        <li style="margin: 10px 0;"><i data-lucide="check" style="color: #b62020; margin-right: 10px;"></i>Ad-free listening</li>
+                        <% if (subscriptionDetails && subscriptionDetails.plan_type === 'yearly') { %>
+                            <li style="margin: 10px 0;"><i data-lucide="check" style="color: #b62020; margin-right: 10px;"></i>10% Savings on yearly plan</li>
+                        <% } %>
+                    </ul>
                 </div>
             </div>
-        </div>
+        <% } else { %>
+            <div class="premium-header">
+                <h1>Upgrade to Premium</h1>
+                <p>Get unlimited access to all features and enjoy an ad-free experience</p>
+            </div>
+
+            <div class="plans-container">
+                <div class="subscription-card">
+                    <h3>Monthly</h3>
+                    <div class="price">₹120<span>/month</span></div>
+                    <ul class="features">
+                        <li>Ad-free listening</li>
+                    </ul>
+                    <button onclick="handleSubscription('monthly')" class="subscribe-btn">Subscribe Now</button>
+                </div>
+                <div class="subscription-card">
+                    <h3>Yearly</h3>
+                    <div class="price">₹1,300<span>/year</span></div>
+                    <ul class="features">
+                        <li>Ad-free listening</li>
+                        <li>Save 10%</li>
+                    </ul>
+                    <button onclick="handleSubscription('yearly')" class="subscribe-btn">Subscribe Now</button>
+                </div>
+            </div>
+
+            <div class="benefits-section">
+                <h2>Premium Benefits</h2>
+                <div class="benefits-grid">
+                    <div class="benefit-card">
+                        <i data-lucide="music"></i>
+                        <h3>Ad-Free Listening</h3>
+                        <p>Enjoy uninterrupted music without any advertisements</p>
+                    </div>
+                </div>
+            </div>
+        <% } %>
     </div>
 
     <script>
@@ -524,74 +512,98 @@
         });
 
         // Handle subscription
-        function handleSubscription(plan) {
-            const amount = plan === 'monthly' ? 19900 : plan === 'yearly' ? 199900 : 39900;
-            const options = {
-                key: '<%= process.env.RAZORPAY_KEY_ID %>',
-                amount: amount,
-                currency: 'INR',
-                name: 'Tune In',
-                description: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Subscription`,
-                image: '/images/Copy_of_Copy_of_TuneIn-removebg-preview.png',
-                order_id: '', // This will be set by the server
-                handler: function(response) {
-                    // Handle successful payment
-                    fetch('/verify-payment', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            razorpay_payment_id: response.razorpay_payment_id,
-                            razorpay_order_id: response.razorpay_order_id,
-                            razorpay_signature: response.razorpay_signature,
-                            plan: plan
-                        })
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            alert('Payment successful! Your premium subscription is now active.');
-                            window.location.href = '/profile';
-                        } else {
-                            alert('Payment verification failed. Please try again.');
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        alert('An error occurred. Please try again.');
-                    });
-                },
-                prefill: {
-                    name: '<%= user ? user.username : "" %>',
-                    email: '<%= user ? user.email : "" %>'
-                },
-                theme: {
-                    color: '#b62020'
-                }
-            };
-
-            // Create order and open Razorpay checkout
-            fetch('/create-order', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
+        async function handleSubscription(plan) {
+            try {
+                const amount = plan === 'monthly' ? 120 : 1300; // Amount in rupees
+                const requestData = {
                     amount: amount,
                     currency: 'INR'
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                options.order_id = data.orderId;
+                };
+                
+                console.log('Sending order request:', requestData);
+                
+                // First create the order
+                const orderResponse = await fetch('/create-order', {
+                    method: 'POST',
+                    headers: {
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(requestData)
+                });
+
+                if (!orderResponse.ok) {
+                    const errorData = await orderResponse.json();
+                    throw new Error(errorData.error || 'Failed to create order');
+                }
+
+                const orderData = await orderResponse.json();
+                console.log('Order created:', orderData);
+                
+                if (orderData.error) {
+                    throw new Error(orderData.error);
+                }
+
+                // Configure Razorpay options
+                const options = {
+                    key: '<%= process.env.RAZORPAY_KEY_ID %>',
+                    amount: orderData.amount,
+                    currency: orderData.currency,
+                    order_id: orderData.orderId,
+                    name: 'Tune In',
+                    description: `${plan.charAt(0).toUpperCase() + plan.slice(1)} Subscription`,
+                    image: '/images/Copy_of_Copy_of_TuneIn-removebg-preview.png',
+                    handler: async function(response) {
+                        try {
+                            console.log('Payment response:', response);
+                            // Handle successful payment
+                            const verifyResponse = await fetch('/verify-payment', {
+                                method: 'POST',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    razorpay_payment_id: response.razorpay_payment_id,
+                                    razorpay_order_id: response.razorpay_order_id,
+                                    razorpay_signature: response.razorpay_signature,
+                                    plan: plan
+                                })
+                            });
+
+                            const data = await verifyResponse.json();
+                            console.log('Verification response:', data);
+                            
+                            if (data.success) {
+                                alert('Payment successful! Your premium subscription is now active.');
+                                window.location.href = '/profile';
+                            } else {
+                                alert(data.error || 'Payment verification failed. Please try again.');
+                                if (data.error === 'You already have an active premium subscription') {
+                                    window.location.href = '/premium';
+                                }
+                            }
+                        } catch (error) {
+                            console.error('Error:', error);
+                            alert('An error occurred during payment verification. Please try again.');
+                        }
+                    },
+                    prefill: {
+                        name: '<%= user ? user.username : "" %>',
+                        email: '<%= user ? user.email : "" %>'
+                    },
+                    theme: {
+                        color: '#b62020'
+                    }
+                };
+
+                // Initialize and open Razorpay
                 const rzp = new Razorpay(options);
                 rzp.open();
-            })
-            .catch(error => {
+            } catch (error) {
                 console.error('Error:', error);
-                alert('An error occurred. Please try again.');
-            });
+                alert('Error creating payment order: ' + error.message);
+            }
         }
     </script>
 </body>

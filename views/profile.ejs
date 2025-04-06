@@ -466,6 +466,21 @@
                         <strong>Member Since</strong>
                         <%= new Date(user.created_at).toLocaleDateString() %>
                     </p>
+                    <% if (user.is_premium && subscriptionDetails && subscriptionDetails.plan_type && subscriptionDetails.subscription_end_date) { %>
+                        <p>
+                            <strong>Subscription Plan</strong>
+                            <%= subscriptionDetails.plan_type.charAt(0).toUpperCase() + subscriptionDetails.plan_type.slice(1) %>
+                        </p>
+                        <p>
+                            <strong>Subscription Valid Until</strong>
+                            <%= new Date(subscriptionDetails.subscription_end_date).toLocaleDateString() %>
+                        </p>
+                    <% } else if (user.is_premium) { %>
+                        <p>
+                            <strong>Subscription Status</strong>
+                            Premium Member
+                        </p>
+                    <% } %>
                 </div>
             </div>
         </div>

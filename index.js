@@ -937,74 +937,272 @@ app.get("/search", async (req, res) => {
 });
 app.post('/create-order', async (req, res) => {
     try {
+        console.log('Request body:', req.body);
+        console.log('Headers:', req.headers);
+        
         const { amount, currency } = req.body;
         
         // Validate required parameters
         if (!amount || !currency) {
+            console.error('Missing parameters:', { 
+                receivedAmount: amount, 
+                receivedCurrency: currency,
+                bodyType: typeof req.body,
+                contentType: req.headers['content-type']
+            });
             return res.status(400).json({ error: 'Amount and currency are required' });
         }
-        
+
         // Initialize Razorpay with your credentials
         const razorpay = new Razorpay({
             key_id: process.env.RAZORPAY_KEY_ID,
             key_secret: process.env.RAZORPAY_KEY_SECRET
         });
         
+        // Convert amount to smallest currency unit (paise)
+        const amountInPaise = Math.round(amount * 100);
+        
         const options = {
-            amount: amount,
+            amount: amountInPaise,
             currency: currency,
-            receipt: `receipt_${Date.now()}`,
+            receipt: receipt_$`{Date.now()}`,
         };
         
+        console.log('Creating Razorpay order with options:', options);
         const order = await razorpay.orders.create(options);
-        res.json({ orderId: order.id });
+        console.log('Razorpay order created:', order);
+        
+        res.json({ 
+            orderId: order.id,
+            amount: amountInPaise,
+            currency: currency
+        });
     } catch (error) {
         console.error('Error creating order:', error);
-        res.status(500).render('error', { 
-            error: 'Failed to create payment order. Please try again.' 
+        res.status(500).json({ 
+            error: 'Failed to create payment order',
+            details: error.message 
         });
     }
 });
 
 app.post('/verify-payment', async (req, res) => {
     try {
+        console.log('Received payment verification request:', req.body);
         const { razorpay_payment_id, razorpay_order_id, razorpay_signature, plan } = req.body;
         
-        // Create the expected signature
+        if (!req.session.userId) {
+            console.error('User not authenticated');
+            return res.status(401).json({ success: false, error: 'User not authenticated' });
+        }
+
+        // Check if user already has an active subscription
+        const activeSubscriptionResult = await db.query(
+            `SELECT * FROM premium_users 
+            WHERE user_id = $1 
+            AND subscription_end_date > CURRENT_TIMESTAMP 
+            ORDER BY subscription_end_date DESC 
+            LIMIT 1`,
+            [req.session.userId]
+        );
+
+        if (activeSubscriptionResult.rows.length > 0) {
+            console.log('User already has an active subscription:', activeSubscriptionResult.rows[0]);
+            return res.status(400).json({ 
+                success: false, 
+                error: 'You already have an active premium subscription' 
+            });
+        }
+
+        if (!razorpay_payment_id || !razorpay_order_id || !razorpay_signature || !plan) {
+            console.error('Missing required payment parameters:', { 
+                payment_id: !!razorpay_payment_id, 
+                order_id: !!razorpay_order_id, 
+                signature: !!razorpay_signature,
+                plan: !!plan 
+            });
+            return res.status(400).json({ success: false, error: 'Missing payment parameters' });
+        }
+
+        // Initialize Razorpay
+        const razorpay = new Razorpay({
+            key_id: process.env.RAZORPAY_KEY_ID,
+            key_secret: process.env.RAZORPAY_KEY_SECRET
+        });
+        
+        // Create the signature verification data
         const body = razorpay_order_id + "|" + razorpay_payment_id;
         const expectedSignature = crypto
             .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
             .update(body.toString())
             .digest('hex');
 
+        console.log('Verifying payment signature:', {
+            userId: req.session.userId,
+            plan: plan,
+            payment_id: razorpay_payment_id,
+            order_id: razorpay_order_id,
+            expected_signature: expectedSignature,
+            received_signature: razorpay_signature
+        });
+
         // Verify the signature
-        if (expectedSignature === razorpay_signature) {
+        const isValidSignature = expectedSignature === razorpay_signature;
+        console.log('Signature verification result:', isValidSignature);
+
+        if (isValidSignature) {
+            // Verify payment status with Razorpay
+            const payment = await razorpay.payments.fetch(razorpay_payment_id);
+            console.log('Payment details from Razorpay:', payment);
+
+            if (payment.status !== 'captured') {
+                console.error('Payment not captured:', payment);
+                return res.status(400).json({ 
+                    success: false, 
+                    error: 'Payment not captured',
+                    status: payment.status 
+                });
+            }
+
             // Update user's premium status in the database
             const userId = req.session.userId;
             const subscriptionEndDate = new Date();
+            const amount = plan === 'monthly' ? 120.00 : 1300.00;
             
             // Set subscription end date based on plan
             if (plan === 'monthly') {
                 subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
             } else if (plan === 'yearly') {
                 subscriptionEndDate.setFullYear(subscriptionEndDate.getFullYear() + 1);
-            } else if (plan === 'family') {
-                subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + 1);
             }
 
-            // Update user's premium status in the database
-            await db.query(
-                'UPDATE users SET is_premium = true, subscription_end_date = $1 WHERE id = $2',
-                [subscriptionEndDate, userId]
-            );
+            try {
+                // Begin transaction
+                await db.query('BEGIN');
 
-            res.json({ success: true });
+                console.log('Starting database transaction for premium update:', {
+                    userId,
+                    plan,
+                    subscriptionEndDate,
+                    amount
+                });
+
+                // Insert into premium_users table
+                const insertResult = await db.query(
+                    `INSERT INTO premium_users 
+                    (user_id, plan_type, subscription_end_date, amount_paid) 
+                    VALUES ($1, $2, $3, $4) 
+                    RETURNING id`,
+                    [userId, plan, subscriptionEndDate, amount]
+                );
+
+                console.log('Inserted into premium_users:', insertResult.rows[0]);
+
+                // Update user's premium status
+                const updateResult = await db.query(
+                    'UPDATE users SET is_premium = true WHERE id = $1 RETURNING id, username, is_premium',
+                    [userId]
+                );
+
+                console.log('Updated user premium status:', updateResult.rows[0]);
+
+                // Commit transaction
+                await db.query('COMMIT');
+
+                console.log('Successfully completed premium update transaction');
+                res.json({ 
+                    success: true,
+                    message: 'Premium subscription activated successfully',
+                    details: {
+                        plan: plan,
+                        endDate: subscriptionEndDate,
+                        isPremium: true
+                    }
+                });
+            } catch (dbError) {
+                // Rollback transaction on error
+                await db.query('ROLLBACK');
+                console.error('Database error during premium update:', dbError);
+                res.status(500).json({ 
+                    success: false, 
+                    error: 'Database error while updating premium status',
+                    details: dbError.message
+                });
+            }
         } else {
-            res.status(400).json({ success: false, error: 'Invalid signature' });
+            console.error('Signature verification failed:', {
+                expected: expectedSignature,
+                received: razorpay_signature
+            });
+            res.status(400).json({ 
+                success: false, 
+                error: 'Invalid payment signature',
+                details: 'Payment verification failed'
+            });
         }
     } catch (error) {
-        console.error('Error verifying payment:', error);
-        res.status(500).json({ success: false, error: 'Error verifying payment' });
+        console.error('Error in payment verification:', error);
+        res.status(500).json({ 
+            success: false, 
+            error: 'Error verifying payment',
+            details: error.message
+        });
+    }
+});
+
+// Premium Page Route
+app.get("/premium", async (req, res) => {
+    if (!req.session.username) {
+        return res.redirect("/login");
+    }
+
+    try {
+        // Get user details including premium status
+        const userResult = await db.query(
+            "SELECT * FROM users WHERE username = $1",
+            [req.session.username]
+        );
+        
+        if (userResult.rows.length === 0) {
+            return res.redirect("/login");
+        }
+
+        const user = userResult.rows[0];
+
+        // Check for active subscription and update premium status
+        const subscriptionResult = await db.query(
+            `SELECT plan_type, subscription_end_date 
+            FROM premium_users 
+            WHERE user_id = $1 
+            AND subscription_end_date > CURRENT_TIMESTAMP 
+            ORDER BY subscription_end_date DESC 
+            LIMIT 1`,
+            [user.id]
+        );
+
+        // Update user's premium status based on subscription
+        const hasActiveSubscription = subscriptionResult.rows.length > 0;
+        if (user.is_premium !== hasActiveSubscription) {
+            await db.query(
+                'UPDATE users SET is_premium = $1 WHERE id = $2',
+                [hasActiveSubscription, user.id]
+            );
+            user.is_premium = hasActiveSubscription;
+        }
+
+        let subscriptionDetails = hasActiveSubscription ? subscriptionResult.rows[0] : null;
+
+        res.render("premium", {
+            user: {
+                ...user,
+                username: req.session.username,
+                is_premium: user.is_premium
+            },
+            subscriptionDetails
+        });
+    } catch (err) {
+        console.error("Error loading premium page:", err);
+        res.status(500).send("Error loading premium page");
     }
 });
 
