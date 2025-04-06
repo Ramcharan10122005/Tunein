@@ -41,6 +41,32 @@ app.use(session({ secret: "yourSecretKey", resave: false, saveUninitialized: tru
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Declare isPremium variable
+let isPremium = false;
+
+// Add middleware to check premium status
+app.use(async (req, res, next) => {
+    if (req.session && req.session.userId) {
+        try {
+            const subscriptionResult = await db.query(
+                `SELECT * FROM premium_users 
+                WHERE user_id = $1 
+                AND subscription_end_date > CURRENT_TIMESTAMP 
+                ORDER BY subscription_end_date DESC 
+                LIMIT 1`,
+                [req.session.userId]
+            );
+            
+            isPremium = subscriptionResult.rows.length > 0;
+        } catch (err) {
+            console.error('Error checking premium status:', err);
+        }
+    } else {
+        isPremium = false;
+    }
+    next();
+});
+
 let users = [
     { email: "202311047@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" },
     { email: "kundenaramcharan@gmail.com", username: "Ramcharan", password: "hashedPassword" },
@@ -108,10 +134,22 @@ app.get("/auth/github",
 app.get(
     "/auth/github/callback",
     passport.authenticate("github", { failureRedirect: "/login" }),
-    (req, res) => {
+    async (req, res) => {
         if (req.user) {
             req.session.username = req.user.username;
             req.session.userId = req.user.id;
+            
+            // Check premium status
+            const subscriptionResult = await db.query(
+                `SELECT * FROM premium_users 
+                WHERE user_id = $1 
+                AND subscription_end_date > CURRENT_TIMESTAMP 
+                ORDER BY subscription_end_date DESC 
+                LIMIT 1`,
+                [req.user.id]
+            );
+            
+            isPremium = subscriptionResult.rows.length > 0;
             console.log("Session after Github auth:", req.session);
         }
         res.redirect('/');
@@ -127,12 +165,23 @@ app.get(
     passport.authenticate("google", {
         failureRedirect: "/login",
     }),
-    (req, res) => {
+    async (req, res) => {
         if (req.user) {
-            // Make sure to set the session username
             req.session.username = req.user.username;
             req.session.userId = req.user.id;
-            console.log("Session after Google auth:", req.session); // Add this to debug
+            
+            // Check premium status
+            const subscriptionResult = await db.query(
+                `SELECT * FROM premium_users 
+                WHERE user_id = $1 
+                AND subscription_end_date > CURRENT_TIMESTAMP 
+                ORDER BY subscription_end_date DESC 
+                LIMIT 1`,
+                [req.user.id]
+            );
+            
+            isPremium = subscriptionResult.rows.length > 0;
+            console.log("Session after Google auth:", req.session);
         }
         res.redirect('/');
     }
@@ -225,7 +274,7 @@ app.post("/signup", async (req, res) => {
     }
 })
 app.post("/login", (req, res, next) => {
-    passport.authenticate("local", (err, user, info) => {
+    passport.authenticate("local", async (err, user, info) => {
       if (err) return next(err);
       if (!user) {
         return res.render("login", {
@@ -235,9 +284,22 @@ app.post("/login", (req, res, next) => {
         });
       }
       
-      req.logIn(user, (err) => {
+      req.logIn(user, async (err) => {
         if (err) return next(err);
-        req.session.username = user.username;  // This line is already correct
+        req.session.username = user.username;
+        req.session.userId = user.id;
+
+        // Check premium status
+        const subscriptionResult = await db.query(
+            `SELECT * FROM premium_users 
+            WHERE user_id = $1 
+            AND subscription_end_date > CURRENT_TIMESTAMP 
+            ORDER BY subscription_end_date DESC 
+            LIMIT 1`,
+            [user.id]
+        );
+        
+        isPremium = subscriptionResult.rows.length > 0;
         return res.redirect("/"); 
       });
     })(req, res, next);
@@ -564,8 +626,8 @@ app.get("/song/:title", async (req, res) => {
         // Increment played_times before checking for ad
         played_times++;
         console.log(played_times);
-        // Check if it's time to show an ad (every 5 clicks)
-        const shouldShowAd = played_times % 5 === 0;
+        // Check if it's time to show an ad (every 5 clicks) and user is not premium
+        const shouldShowAd = !isPremium && played_times % 5 === 0;
         const currentAd = shouldShowAd ? getNextAd() : null;
 
         // Send response with song details and ad info
@@ -606,11 +668,11 @@ app.post("/remove-from-playlist", async (req, res) => {
     if (playlistCheck.rows.length === 0) {
         return res.status(403).send("You don't have permission to modify this playlist");
     }
-    
+    console.log(playlistId, songId, req.session.userId);
     // Update the playlist to remove the song
     await db.query(
-        "UPDATE playlists SET song_id = NULL WHERE id = $1 AND song_id = $2 AND user_id = $3",
-        [playlistId, songId, req.session.userId]
+        "UPDATE playlists SET song_id = NULL WHERE song_id = $1 AND user_id = $2",
+        [songId, req.session.userId]
     );
     
     res.redirect("/playlists/songs?name=" + encodeURIComponent(req.session.playlistName));
@@ -728,8 +790,8 @@ app.get("/play/:title", async (req, res) => {
         // Increment played_times before checking for ad
         played_times++;
 
-        // Check if it's time to show an ad (every 5 clicks)
-        const shouldShowAd = played_times % 5 === 0;
+        // Check if it's time to show an ad (every 5 clicks) and user is not premium
+        const shouldShowAd = !isPremium && played_times % 5 === 0;
         const currentAd = shouldShowAd ? getNextAd() : null;
 
         // Render EJS with song details and ad info
@@ -762,8 +824,8 @@ app.post("/api/song-played", (req, res) => {
     // Increment the played_times counter
     played_times++;
     
-    // Check if it's time to show an ad (after 5 songs)
-    const shouldShowAd = played_times % 5 === 0;
+    // Check if it's time to show an ad (after 5 songs) and user is not premium
+    const shouldShowAd = !isPremium && played_times % 5 === 0;
     const currentAd = shouldShowAd ? getNextAd() : null;
     
     // Return response with ad information
@@ -1120,6 +1182,7 @@ app.post('/verify-payment', async (req, res) => {
                         isPremium: true
                     }
                 });
+                isPremium = true;
             } catch (dbError) {
                 // Rollback transaction on error
                 await db.query('ROLLBACK');

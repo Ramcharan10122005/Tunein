@@ -242,7 +242,7 @@
             width: 100%;
         }
 
-        .sidebar.closed + .main-content {
+        .sidebar.closed+.main-content {
             margin-left: 0;
             width: 100%;
         }
@@ -584,8 +584,43 @@
             opacity: 0.5;
             cursor: not-allowed;
         }
+
         .music-controls button[disabled]:hover {
             transform: none;
+        }
+
+        .username-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 64px;
+            height: 28px;
+            padding: 12px 12px;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-right: 150px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            font-size: 20px;
+            flex-direction: column;
+        }
+
+        .usernam-greet {
+            margin-top: -10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .username-name {
+            margin-top: -25px;
+            color: red;
+            font-family: 'Pacifico', cursive;
+            font-weight: bold;
+            letter-spacing: 2px;
         }
     </style>
 </head>
@@ -601,16 +636,11 @@
             <input type="text" placeholder="Search songs, playlists..." class="search-bar">
         </div>
 
-        <div class="sign-in-box">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                class="lucide lucide-user-round-pen">
-                <path d="M2 21a8 8 0 0 1 10.821-7.487" />
-                <path
-                    d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
-                <circle cx="10" cy="8" r="5" />
-            </svg>
-            <span>Sign In</span>
+        <div class="username-container">
+            <p class="usernam-greet">Welcome,</p>
+            <p class="username-name">
+                <%= locals.user %>!
+            </p>
         </div>
     </header>
 
@@ -723,11 +753,12 @@
                     <% } else { %>
                         <div class="songs-count">0 songs</div>
                         <% } %>
-                <div class="playlist-actions">
-                    <button class="search-button" onclick="window.location.href='/search-page?playlistId=<%= playlist.id %>&playlistName=<%= encodeURIComponent(playlist.name) %>'">
-                        <i data-lucide="search"></i> Search & Add Songs
-                    </button>
-                </div>
+                            <div class="playlist-actions">
+                                <button class="search-button"
+                                    onclick="window.location.href='/search-page?playlistId=<%= playlist.id %>&playlistName=<%= encodeURIComponent(playlist.name) %>'">
+                                    <i data-lucide="search"></i> Search & Add Songs
+                                </button>
+                            </div>
             </div>
         </div>
 
@@ -745,7 +776,8 @@
                     </thead>
                     <tbody>
                         <% playlist.songs.forEach((song, index)=> { %>
-                            <tr onclick="playSong('<%= song.name %>', '<%= song.audio %>', '<%= song.image %>', '<%= song.artist %>')">
+                            <tr
+                                onclick="playSong('<%= song.name %>', '<%= song.audio %>', '<%= song.image %>', '<%= song.artist %>')">
                                 <td class="index-number">
                                     <%= index + 1 %>
                                 </td>
@@ -842,10 +874,10 @@
             const volumeSlider = document.getElementById('volume-slider');
             const volumeInput = volumeSlider.querySelector('input');
             const progressContainer = document.querySelector('.progress-bar');
-            
+
             // Add song counter to track plays
             let songsPlayed = 0;
-            
+
             // Create ad container
             const adContainer = document.createElement('div');
             adContainer.id = 'ad-container';
@@ -860,7 +892,7 @@
             adContainer.style.justifyContent = 'center';
             adContainer.style.alignItems = 'center';
             adContainer.style.flexDirection = 'column';
-            
+
             // Add ad content
             const adContent = document.createElement('div');
             adContent.style.textAlign = 'center';
@@ -871,25 +903,25 @@
             `;
             adContainer.appendChild(adContent);
             document.body.appendChild(adContainer);
-            
+
             // Add global function to close ad (does nothing to prevent errors if called elsewhere)
-            window.closeAd = function() {
+            window.closeAd = function () {
                 // This function does nothing to ensure ads can only be closed when audio completes
                 console.log("Ad can only be closed when audio completes");
             };
-            
+
             // Add navigation functionality for sidebar items
             const sidebarItems = sidebar.querySelectorAll('ul li');
-            
+
             // Function to set active sidebar item based on current URL
             function setActiveSidebarItem() {
                 const currentPath = window.location.pathname;
                 sidebarItems.forEach((item, index) => {
                     // Remove active class from all items first
                     item.classList.remove('active');
-                    
+
                     // Add active class based on current path
-                    switch(currentPath) {
+                    switch (currentPath) {
                         case '/':
                             if (index === 0) item.classList.add('active');
                             break;
@@ -917,7 +949,7 @@
 
             sidebarItems.forEach((item, index) => {
                 item.addEventListener('click', () => {
-                    switch(index) {
+                    switch (index) {
                         case 0: // Home
                             window.location.href = '/';
                             break;
@@ -965,7 +997,7 @@
                 audioPlayer.volume = value / 100;
                 // Update the slider background
                 volumeInput.style.setProperty('--volume-percentage', `${value}%`);
-                
+
                 // Update volume icon based on level
                 const volumeIcon = volumeBtn.querySelector('i');
                 if (value == 0) {
@@ -1058,17 +1090,17 @@
                     <div class="song-artist" style="font-size: 12px; color: #b3b3b3;">${artist}</div>
                 </div>
             `;
-            
+
             // Update the audio source and play
             const audioPlayer = document.getElementById('audio-player');
             audioPlayer.src = audio;
             audioPlayer.play();
-            
+
             // Update play/pause button
             const playPauseBtn = document.getElementById('play-pause');
             playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
             lucide.createIcons();
-            
+
             // Notify backend that a song was played
             fetch('/api/song-played', {
                 method: 'POST',
@@ -1077,38 +1109,38 @@
                 },
                 body: JSON.stringify({ title: title })
             })
-            .then(response => response.json())
-            .then(data => {
-                // Check if we need to show an ad (only after 5 songs have been played)
-                if (data.showAd && data.playedTimes >= 5) {
-                    // Pause the audio
-                    audioPlayer.pause();
-                    
-                    // Show the ad
-                    const adContainer = document.getElementById('ad-container');
-                    const adContent = adContainer.querySelector('div');
-                    adContent.innerHTML = `
+                .then(response => response.json())
+                .then(data => {
+                    // Check if we need to show an ad (only after 5 songs have been played)
+                    if (data.showAd && data.playedTimes >= 5) {
+                        // Pause the audio
+                        audioPlayer.pause();
+
+                        // Show the ad
+                        const adContainer = document.getElementById('ad-container');
+                        const adContent = adContainer.querySelector('div');
+                        adContent.innerHTML = `
                         <h3 style="color: white; margin-bottom: 10px;">${data.ad.title}</h3>
                         <img src="${data.ad.image}" alt="${data.ad.title}" style="max-width: 100%; max-height: 150px; margin-bottom: 10px;">
                         <audio id="ad-audio" src="${data.ad.audio}" autoplay></audio>
                         <div class="ad-timer" style="color: #b3b3b3; font-size: 14px;">Ad will end when audio completes</div>
                     `;
-                    
-                    // Show the ad
-                    adContainer.style.display = 'flex';
-                    
-                    // Add event listener for when ad audio completes
-                    const adAudio = document.getElementById('ad-audio');
-                    adAudio.addEventListener('ended', function() {
-                        // Hide ad and resume song
-                        adContainer.style.display = 'none';
-                        audioPlayer.play();
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error notifying backend about song play:', error);
-            });
+
+                        // Show the ad
+                        adContainer.style.display = 'flex';
+
+                        // Add event listener for when ad audio completes
+                        const adAudio = document.getElementById('ad-audio');
+                        adAudio.addEventListener('ended', function () {
+                            // Hide ad and resume song
+                            adContainer.style.display = 'none';
+                            audioPlayer.play();
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error notifying backend about song play:', error);
+                });
         }
     </script>
 </body>
