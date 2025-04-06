@@ -429,7 +429,7 @@ app.get("/playlists/songs", async (req, res) => {
 
     const playlistName = req.query.name;
     const loggedInUserId = req.session.userId;
-
+    req.session.playlistName=playlistName;
     try {
         // Fetch all playlists and their songs for the logged-in user
         const playlistsResult = await db.query(`
@@ -1068,6 +1068,147 @@ app.post("/change-password", async (req, res) => {
     }
 });
 
+// Search page route
+app.get("/search-page", (req, res) => {
+    if (!req.session.userId) {
+        return res.redirect("/login");
+    }
+    
+    const playlistId = req.query.playlistId;
+    const playlistName = req.query.playlistName;
+    
+    res.render("search", {
+        user: req.session.username,
+        playlistId: playlistId,
+        playlistName: playlistName
+    });
+});
+app.get("/add-to-playlist/:title", async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: "User not authenticated" });
+    }
+    
+    try {
+        const title = req.params.title;
+        const playlistName = req.session.playlistName;
+        const userId = req.session.userId;
+        
+        if (!playlistName) {
+            return res.status(400).json({ success: false, error: "No playlist selected" });
+        }
+        
+        // Get the song ID
+        const songResult = await db.query("SELECT id FROM songs WHERE title = $1", [title]);
+        if (songResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: "Song not found" });
+        }
+        const songId = songResult.rows[0].id;
+        
+        // Get the playlist ID
+        const playlistResult = await db.query(
+            "SELECT id FROM playlists WHERE playlist_name = $1 AND user_id = $2", 
+            [playlistName, userId]
+        );
+        if (playlistResult.rows.length === 0) {
+            return res.status(404).json({ success: false, error: "Playlist not found" });
+        }
+        const playlistId = playlistResult.rows[0].id;
+        
+        // Check if the song is already in the playlist
+        const existingSong = await db.query(
+            "SELECT * FROM playlists WHERE id = $1 AND song_id = $2",
+            [playlistId, songId]
+        );
+        
+        if (existingSong.rows.length > 0) {
+            return res.status(400).json({ success: false, error: "Song is already in this playlist" });
+        }
+        
+        // Add the song to the playlist
+        await db.query(
+            "INSERT INTO playlists (playlist_name, user_id, song_id) VALUES ($1, $2, $3)",
+            [playlistName, userId, songId]
+        );
+        
+        // Redirect back to the search page
+        res.redirect("/search-page");
+    } catch (err) {
+        console.error("Error adding song to playlist:", err);
+        res.status(500).json({ success: false, error: "Internal server error" });
+    }
+});
+// Route to get song ID by title
+app.get("/get-song-id", async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: "User not authenticated" });
+    }
+    
+    try {
+        const title = req.query.title;
+        if (!title) {
+            return res.status(400).json({ success: false, error: "Title parameter is required" });
+        }
+        
+        const lowercaseTitle = title.toLowerCase();
+        const result = await db.query("SELECT id FROM songs WHERE title = $1", [lowercaseTitle]);
+        
+        if (result.rows.length === 0) {
+            return res.status(404).json({ success: false, error: "Song not found" });
+        }
+        
+        res.json({ success: true, songId: result.rows[0].id });
+    } catch (err) {
+        console.error("Error getting song ID:", err);
+        res.status(500).json({ success: false, error: "Internal server error" });
+    }
+});
+
+// Route to add a song to a playlist
+app.post("/add-to-playlist", async (req, res) => {
+    if (!req.session.userId) {
+        return res.status(401).json({ success: false, error: "User not authenticated" });
+    }
+    
+    try {
+        const { playlistId, songId } = req.body;
+        
+        if (!playlistId || !songId) {
+            return res.status(400).json({ success: false, error: "Playlist ID and Song ID are required" });
+        }
+        
+        // Verify the playlist belongs to the user
+        const playlistCheck = await db.query(
+            "SELECT * FROM playlists WHERE id = $1 AND user_id = $2",
+            [playlistId, req.session.userId]
+        );
+        
+        if (playlistCheck.rows.length === 0) {
+            return res.status(403).json({ success: false, error: "You don't have permission to add to this playlist" });
+        }
+        
+        // Check if the song is already in the playlist
+        const existingSong = await db.query(
+            "SELECT * FROM playlists WHERE id = $1 AND song_id = $2",
+            [playlistId, songId]
+        );
+        
+        if (existingSong.rows.length > 0) {
+            return res.status(400).json({ success: false, error: "Song is already in this playlist" });
+        }
+        
+        // Add the song to the playlist
+        await db.query(
+            "INSERT INTO playlists (playlist_name, user_id, song_id) VALUES ($1, $2, $3)",
+            [playlistName, req.session.userId, songId]
+        );
+        
+        res.json({ success: true, message: "Song added to playlist successfully" });
+    } catch (err) {
+        console.error("Error adding song to playlist:", err);
+        res.status(500).json({ success: false, error: "Internal server error" });
+    }
+});
+
 app.listen(port, () => {
     console.log(`Server running on http://localhost:${port}`);
 });
@@ -1086,3 +1227,4 @@ app.use((req, res) => {
         error: 'Page not found'
     });
 });
+

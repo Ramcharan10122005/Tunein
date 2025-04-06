@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Search | Tune In</title>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            background: #0f0f0f;
+            color: white;
+            display: flex;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 250px;
+            height: 100%;
+            background: #181818;
+            transition: transform 0.3s;
+            padding-top: 60px;
+            transform: translateX(0);
+            z-index: 2;
+            overflow-y: auto;
+        }
+
+        .sidebar.closed {
+            transform: translateX(-250px);
+        }
+
+        .sidebar ul {
+            list-style: none;
+            padding: 60px 0 0 0;
+            margin: 0;
+        }
+
+        .sidebar ul li {
+            padding: 15px;
+            cursor: pointer;
+            transition: background 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .sidebar ul li:hover {
+            background: #282828;
+        }
+
+        /* Sidebar playlist items */
+        .sidebar-playlists {
+            margin-top: 20px;
+            padding: 0 15px;
+        }
+
+        .sidebar-playlist-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 0;
+            cursor: pointer;
+        }
+
+        .sidebar-playlist-item img,
+        .sidebar-playlist-icon {
+            width: 40px;
+            height: 40px;
+            margin-right: 10px;
+            background: #333;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .sidebar-playlist-details {
+            overflow: hidden;
+        }
+
+        .sidebar-playlist-title {
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .sidebar-playlist-subtitle {
+            font-size: 12px;
+            color: #b3b3b3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Header and Search Bar */
+        header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            background: #181818;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 3;
+            height: 50px;
+        }
+
+        .menu-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .menu-btn {
+            font-size: 24px;
+            cursor: pointer;
+            background: none;
+            border: none;
+            color: white;
+            margin-left: 20px;
+            position: relative;
+            z-index: 4;
+        }
+
+        .tunein {
+            font-size: 20px;
+            font-weight: bold;
+            color: white;
+            margin-left: 20px;
+            position: relative;
+            z-index: 3;
+        }
+
+        .search-container {
+            display: flex;
+            align-items: center;
+            background: #282828;
+            padding: 10px;
+            border-radius: 25px;
+            width: 420px;
+        }
+
+        .search-icon {
+            color: white;
+            margin-left: 10px;
+        }
+
+        .search-bar {
+            flex-grow: 1;
+            padding: 10px;
+            border: none;
+            outline: none;
+            background: transparent;
+            color: white;
+        }
+
+        /* Profile & Welcome Message */
+        .sign-in-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background-color: #b62020;
+            padding: 10px 15px;
+            border-radius: 6px;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            transition: background 0.3s ease;
+        }
+
+        .sign-in-box:hover {
+            background-color: #9e1c1c;
+        }
+
+        .sign-in-box svg {
+            width: 20px;
+            height: 20px;
+            stroke: #eeecec;
+        }
+
+        .username-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            width: 64px;
+            height: 28px;
+            padding: 12px 12px;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-right: 150px;
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            font-size: 20px;
+            flex-direction: column;
+        }
+
+        .usernam-greet {
+            margin-top: -10px;
+            color: white;
+            font-weight: bold;
+        }
+
+        .username-name {
+            margin-top: -25px;
+            color: red;
+            font-family: 'Pacifico', cursive;
+            font-weight: bold;
+            letter-spacing: 2px;
+        }
+
+        /* Main Content */
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            flex-grow: 1;
+            margin-top: 80px;
+            margin-bottom: 80px;
+            width: calc(100% - 250px);
+            transition: all 0.3s;
+        }
+
+        body.sidebar-open .main-content {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        .sidebar.closed + .main-content {
+            margin-left: 0;
+            width: 100%;
+        }
+
+        /* Search Results */
+        .search-results {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .song-card {
+            background: #282828;
+            border-radius: 8px;
+            padding: 15px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease;
+        }
+
+        .song-card:hover {
+            transform: translateY(-5px);
+            background: #383838;
+        }
+
+        .song-card img {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+
+        .song-card h4 {
+            margin: 0;
+            color: #fff;
+            font-size: 16px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .song-card p {
+            margin: 5px 0 0;
+            color: #b3b3b3;
+            font-size: 14px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .add-button {
+            background: #b62020;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-top: 10px;
+            width: 100%;
+            transition: background-color 0.2s ease;
+        }
+
+        .add-button:hover {
+            background: #9e1c1c;
+        }
+
+        /* Full-Width Music Bar */
+        .music-controls {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background: #181818;
+            padding: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-sizing: border-box;
+            z-index: 5;
+            border-top: 1px solid #333;
+        }
+
+        .track-info {
+            display: flex;
+            align-items: center;
+            flex: 1;
+            padding-left: 20px;
+            max-width: 300px;
+        }
+
+        .track-info svg {
+            margin-right: 12px;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .controls button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 5px;
+            background: #333;
+            border-radius: 5px;
+            margin: 0 20px;
+            position: relative;
+        }
+
+        .progress-bar span {
+            position: absolute;
+            height: 100%;
+            width: 0%;
+            background: #b62020;
+            border-radius: 5px;
+        }
+
+        .volume-container {
+            position: relative;
+        }
+
+        .volume-slider {
+            position: absolute;
+            left: 50%;
+            bottom: 40px;
+            transform: translateX(-50%);
+            display: none;
+            width: 5px;
+            height: 80px;
+            background: #ccc;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .volume-slider input {
+            transform: rotate(-90deg);
+            width: 80px;
+            position: absolute;
+            left: -37px;
+            top: 30px;
+        }
+
+        /* Search Header */
+        .search-header {
+            display: flex;
+            align-items: flex-end;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: linear-gradient(to bottom, #4f4f7a, #181818);
+            border-radius: 8px;
+        }
+
+        .search-header-image {
+            width: 200px;
+            height: 200px;
+            background-color: #b62020;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 20px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .search-header-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .search-header-info h1 {
+            font-size: 42px;
+            margin: 0 0 10px 0;
+        }
+
+        .search-header-info p {
+            font-size: 16px;
+            margin: 10px 0;
+            color: #b3b3b3;
+        }
+
+        .search-header-image svg {
+            width: 60px;
+            height: 60px;
+        }
+
+        /* Playlist selector */
+        .playlist-selector {
+            margin: 0 20px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .playlist-selector label {
+            color: #b3b3b3;
+            font-size: 14px;
+        }
+
+        .playlist-dropdown {
+            background: #282828;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 4px;
+            font-size: 14px;
+            min-width: 200px;
+            cursor: pointer;
+        }
+
+        .playlist-dropdown:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #b62020;
+        }
+
+        .playlist-dropdown option {
+            background: #282828;
+            color: white;
+        }
+
+        /* Current playlist info */
+        .current-playlist-info {
+            margin: 0 20px 20px;
+            padding: 15px;
+            background: #282828;
+            border-radius: 8px;
+            color: #b3b3b3;
+            font-size: 14px;
+        }
+
+        .current-playlist-info strong {
+            color: white;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="menu-container">
+            <button class="menu-btn" id="menu-btn"><i data-lucide="list"></i></button>
+            <span class="tunein"><img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo">Tune In</span>
+        </div>
+        <div class="search-container">
+            <form id="search-form" onsubmit="handleSearch(event)">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" name="query" id="search-input" placeholder="Search songs..." class="search-bar">
+                <button type="submit" style="display: none;"></button>
+            </form>
+        </div>
+        <% if (locals.user) { %>
+            <div class="username-container">
+                <p class="usernam-greet">Welcome,</p>
+                <p class="username-name"><%= locals.user %>!</p>
+            </div>
+        <% } else { %>
+            <div class="sign-in-box" onclick="window.location.href='/login'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-user-round-pen">
+                    <path d="M2 21a8 8 0 0 1 10.821-7.487" />
+                    <path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+                    <circle cx="10" cy="8" r="5" />
+                </svg>
+                <span>Sign In</span>
+            </div>
+        <% } %>
+    </header>
+
+    <div class="sidebar">
+        <ul>
+            <li onclick="redirectTo('')">
+                <i data-lucide="house"></i> Home
+            </li>
+            <li onclick="redirectTo('liked-songs')">
+                <i data-lucide="heart"></i> Liked Songs
+            </li>
+            <li onclick="redirectTo('playlists')">
+                <i data-lucide="list-music"></i> Playlists
+            </li>
+            <li onclick="redirectTo('Mood-based')">
+                <i data-lucide="smile-plus"></i> Mood-based
+            </li>
+            <li onclick="redirectTo('premium')">
+                <i data-lucide="crown"></i> Premium
+            </li>
+            <li onclick="redirectTo('profile')">
+                <i data-lucide="user-pen"></i> Profile
+            </li>
+        </ul>
+
+        <!-- Your playlists section -->
+        <div class="sidebar-playlists">
+            <% if (typeof userPlaylists !== 'undefined' && userPlaylists.length > 0) { %>
+                <% userPlaylists.forEach(playlist => { %>
+                    <div class="sidebar-playlist-item">
+                        <div class="sidebar-playlist-icon">
+                            <i data-lucide="music"></i>
+                        </div>
+                        <div class="sidebar-playlist-details">
+                            <div class="sidebar-playlist-title">
+                                <%= playlist.name %>
+                            </div>
+                            <div class="sidebar-playlist-subtitle">Playlist • <%= playlist.songs.length %> songs</div>
+                        </div>
+                    </div>
+                <% }); %>
+            <% } %>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="search-header">
+            <div class="search-header-image">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                    stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-search">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="m21 21-4.3-4.3" />
+                </svg>
+            </div>
+            <div class="search-header-info">
+                <h1>Search</h1>
+                <% if (typeof playlistName !== 'undefined' && playlistName) { %>
+                    <p>Find and add songs to "<%= playlistName %>"</p>
+                <% } else { %>
+                    <p>Find and add songs to your playlists</p>
+                <% } %>
+            </div>
+        </div>
+
+        <% if (typeof playlistId !== 'undefined' && playlistId) { %>
+            <div class="current-playlist-info">
+                <p>Adding songs to: <strong><%= playlistName %></strong></p>
+            </div>
+        <% } %>
+
+        <div id="search-results" class="search-results">
+            <!-- Search results will be populated here -->
+        </div>
+    </div>
+
+    <div class="music-controls">
+        <div class="track-info">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
+                stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                class="lucide lucide-music">
+                <path d="M9 18V5l12-2v13" />
+                <circle cx="6" cy="18" r="3" />
+                <circle cx="18" cy="16" r="3" />
+            </svg>
+            <div>
+                <div id="track-name">Song Name</div>
+                <div style="font-size: 12px; color: #b3b3b3;">Artist Name</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <button id="prev"><i data-lucide="skip-back"></i></button>
+            <button id="play-pause"><i data-lucide="play"></i></button>
+            <button id="next"><i data-lucide="skip-forward"></i></button>
+        </div>
+        <div class="progress-bar"><span id="progress"></span></div>
+        <div class="controls">
+            <button><i data-lucide="repeat"></i></button>
+            <button><i data-lucide="heart"></i></button>
+            <div class="volume-container">
+                <button id="volume-btn"><i data-lucide="volume-2"></i></button>
+                <div class="volume-slider" id="volume-slider"><input type="range" min="0" max="100" value="50"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global function for adding songs to playlist
+        async function addToPlaylist(title) {
+            window.location.href = `add-to-playlist/${title}`;
+            // Get playlist ID from URL parameters or from the page
+            // const urlParams = new URLSearchParams(window.location.search);
+            // const playlistId = urlParams.get('playlistId');
+            // const playlistName = urlParams.get('playlistName');
+            
+            // if (!playlistId) {
+            //     alert('No playlist selected. Please go back to your playlist and try again.');
+            //     return;
+            // }
+            
+            // try {
+            //     // First get the song ID
+            //     const songResponse = await fetch(`/get-song-id?title=${encodeURIComponent(title)}`);
+            //     const songData = await songResponse.json();
+                
+            //     if (!songData.success) {
+            //         alert('Failed to find song: ' + songData.error);
+            //         return;
+            //     }
+                
+            //     // Then add to playlist
+            //     const response = await fetch('/add-to-playlist', {
+            //         method: 'POST',
+            //         headers: {
+            //             'Content-Type': 'application/json'
+            //         },
+            //         body: JSON.stringify({
+            //             playlistId: playlistId,
+            //             songId: songData.songId
+            //         })
+            //     });
+                
+            //     const result = await response.json();
+                
+            //     if (result.success) {
+            //         alert('Song added to playlist successfully!');
+            //         // Redirect back to the playlist page
+            //         if (playlistName) {
+            //             window.location.href = `/playlists/songs?name=${encodeURIComponent(playlistName)}`;
+            //         } else {
+            //             window.location.href = '/playlists';
+            //         }
+            //     } else {
+            //         alert('Failed to add song to playlist: ' + result.error);
+            //     }
+            // } catch (error) {
+            //     console.error('Error adding song to playlist:', error);
+            //     alert('Error adding song to playlist');
+            // }
+        }
+
+        document.addEventListener("DOMContentLoaded", function () {
+            // Initialize Lucide icons
+            lucide.createIcons();
+
+            // Sidebar functionality
+            const menuBtn = document.getElementById("menu-btn");
+            const sidebar = document.querySelector(".sidebar");
+            const body = document.body;
+
+            // Show sidebar by default
+            sidebar.classList.add("open");
+            body.classList.add("sidebar-open");
+
+            // Toggle sidebar
+            menuBtn.addEventListener("click", function () {
+                sidebar.classList.toggle("closed");
+                body.classList.toggle("sidebar-open");
+            });
+
+            // Volume slider toggle
+            document.getElementById('volume-btn').addEventListener('click', () => {
+                const slider = document.getElementById('volume-slider');
+                slider.style.display = slider.style.display === 'block' ? 'none' : 'block';
+            });
+
+            // Search functionality
+            const searchForm = document.getElementById('search-form');
+            const searchInput = document.getElementById('search-input');
+            const searchResults = document.getElementById('search-results');
+            const playlistSelect = document.getElementById('playlist-select');
+
+            searchForm.addEventListener('submit', handleSearch);
+            searchInput.addEventListener('input', handleSearch);
+
+            async function handleSearch(event) {
+                event.preventDefault();
+                const query = searchInput.value.trim();
+
+                if (query.length === 0) {
+                    searchResults.innerHTML = '';
+                    return;
+                }
+
+                try {
+                    const response = await fetch(`/search?query=${encodeURIComponent(query)}`);
+                    const songs = await response.json();
+
+                    // Clear previous results
+                    searchResults.innerHTML = '';
+
+                    // Display new results
+                    songs.forEach(song => {
+                        const songCard = document.createElement('div');
+                        songCard.className = 'song-card';
+                        songCard.innerHTML = `
+                            <img src="${song.image}" alt="${song.title}">
+                            <h4>${song.title}</h4>
+                            <p>${song.artist}</p>
+                            <button class="add-button" onclick="addToPlaylist('${song.title}')">Add to Playlist</button>
+                        `;
+                        searchResults.appendChild(songCard);
+                    });
+
+                    // Show message if no results found
+                    if (songs.length === 0) {
+                        searchResults.innerHTML = '<div style="text-align: center; color: #b3b3b3; padding: 20px;">No songs found. Try a different search term.</div>';
+                    }
+                } catch (error) {
+                    console.error('Error searching:', error);
+                    searchResults.innerHTML = '<div style="text-align: center; color: #b3b3b3; padding: 20px;">Error searching songs. Please try again.</div>';
+                }
+            }
+
+            function redirectTo(page) {
+                window.location.href = `/${page}`;
+            }
+        });
+    </script>
+</body>
+</html> 

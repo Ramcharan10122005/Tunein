@@ -245,6 +245,7 @@
         .liked-songs-info .songs-count {
             font-size: 14px;
             color: #b3b3b3;
+            margin-top: 5px;
         }
 
         .liked-songs-info .username {
@@ -465,6 +466,35 @@
             color: #b3b3b3;
             font-size: 16px;
         }
+
+        .playlist-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-button {
+            background: #b62020;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-weight: bold;
+            transition: background-color 0.2s ease;
+        }
+
+        .search-button:hover {
+            background: #9e1c1c;
+        }
+
+        .search-button i {
+            width: 18px;
+            height: 18px;
+        }
     </style>
 </head>
 
@@ -601,6 +631,11 @@
                     <% } else { %>
                         <div class="songs-count">0 songs</div>
                         <% } %>
+                <div class="playlist-actions">
+                    <button class="search-button" onclick="window.location.href='/search-page?playlistId=<%= playlist.id %>&playlistName=<%= encodeURIComponent(playlist.name) %>'">
+                        <i data-lucide="search"></i> Search & Add Songs
+                    </button>
+                </div>
             </div>
         </div>
 

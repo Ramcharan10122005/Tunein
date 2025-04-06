@@ -28,14 +28,7 @@ CREATE TABLE liked (
     CONSTRAINT fk_song FOREIGN KEY (songid) REFERENCES songs(id) ON DELETE CASCADE
 );
 
--- Playlists Table
-CREATE TABLE playlists (
-    id SERIAL PRIMARY KEY,
-    name VARCHAR(255) NOT NULL,
-    userid INT NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_playlist_user FOREIGN KEY (userid) REFERENCES users(id) ON DELETE CASCADE
-);
+
 
 -- Playlist Songs Table (junction table for many-to-many relationship)
 CREATE TABLE playlist_songs (
