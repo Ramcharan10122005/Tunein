@@ -43,14 +43,50 @@
         .sidebar ul li {
             padding: 15px;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 10px;
+            color: #b3b3b3;
+            margin: 4px 10px;
+            border-radius: 8px;
+            position: relative;
         }
 
         .sidebar ul li:hover {
             background: #282828;
+            color: white;
+        }
+
+        .sidebar ul li:hover svg {
+            transform: scale(1.1);
+            stroke: white;
+        }
+
+        .sidebar ul li svg {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar ul li.active {
+            color: white;
+            background: #282828;
+        }
+
+        .sidebar ul li.active svg {
+            stroke: white;
+        }
+
+        /* Add a subtle indicator for the active page */
+        .sidebar ul li.active::before {
+            content: '';
+            position: absolute;
+            left: -10px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 4px;
+            height: 20px;
+            background: #b62020;
+            border-radius: 0 4px 4px 0;
         }
 
         /* Sidebar playlist items */
@@ -297,6 +333,14 @@
             margin-right: 16px;
             background-size: cover;
             background-position: center;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .song-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
         }
 
         .song-details {
@@ -419,6 +463,7 @@
             border-radius: 5px;
             margin: 0 20px;
             position: relative;
+            cursor: pointer;
         }
 
         .progress-bar span {
@@ -439,19 +484,57 @@
             bottom: 40px;
             transform: translateX(-50%);
             display: none;
-            width: 5px;
-            height: 80px;
-            background: #ccc;
-            border-radius: 5px;
+            width: 24px;
+            height: 100px;
+            background: #181818;
+            border-radius: 12px;
             cursor: pointer;
+            padding: 10px 0;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
         }
 
-        .volume-slider input {
+        .volume-slider input[type="range"] {
+            -webkit-appearance: none;
             transform: rotate(-90deg);
-            width: 80px;
+            width: 100px;
+            height: 4px;
+            background: #4d4d4d;
             position: absolute;
-            left: -37px;
-            top: 30px;
+            left: -40px;
+            top: 48px;
+            border-radius: 2px;
+        }
+
+        .volume-slider input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            margin-top: -4px;
+        }
+
+        .volume-slider input[type="range"]::-moz-range-thumb {
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            border: none;
+            margin-top: -4px;
+        }
+
+        .volume-slider input[type="range"]::-webkit-slider-runnable-track {
+            height: 4px;
+            background: linear-gradient(to right, #b62020 var(--volume-percentage, 50%), #4d4d4d var(--volume-percentage, 50%));
+            border-radius: 2px;
+        }
+
+        .volume-slider input[type="range"]::-moz-range-track {
+            height: 4px;
+            background: linear-gradient(to right, #b62020 var(--volume-percentage, 50%), #4d4d4d var(--volume-percentage, 50%));
+            border-radius: 2px;
         }
 
         .date-added {
@@ -494,6 +577,15 @@
         .search-button i {
             width: 18px;
             height: 18px;
+        }
+
+        /* Add styles for disabled buttons */
+        .music-controls button[disabled] {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .music-controls button[disabled]:hover {
+            transform: none;
         }
     </style>
 </head>
@@ -653,33 +745,36 @@
                     </thead>
                     <tbody>
                         <% playlist.songs.forEach((song, index)=> { %>
-                            <tr>
+                            <tr onclick="playSong('<%= song.name %>', '<%= song.audio %>', '<%= song.image %>', '<%= song.artist %>')">
                                 <td class="index-number">
                                     <%= index + 1 %>
                                 </td>
                                 <td>
                                     <div class="song-title-info">
-                                        <div class="song-cover" style="background-color: #333;">
-                                            <!-- You can use real image if available -->
+                                        <div class="song-cover">
+                                            <img src="<%= song.image %>" alt="<%= song.name %>">
                                         </div>
                                         <div class="song-details">
                                             <div class="song-title">
-                                                <%= song.name %> <!-- Print song name correctly -->
+                                                <%= song.name %>
+                                            </div>
+                                            <div class="song-artist">
+                                                <%= song.artist %>
                                             </div>
                                         </div>
                                     </div>
                                 </td>
-                                <td>Single</td> <!-- Placeholder for Album -->
+                                <td>Single</td>
                                 <td>
                                     <%= song.artist %>
-                                </td> <!-- Print artist name -->
+                                </td>
                                 <td>
                                     <div class="song-actions">
                                         <button class="action-btn">⋮</button>
                                         <div class="action-menu">
-                                            <form action="/remove-liked" method="POST">
-                                                <input type="hidden" name="userId" value="<%= loggedInUserId %>">
-                                                <input type="hidden" name="songName" value="<%= song.name %>">
+                                            <form action="/remove-from-playlist" method="POST">
+                                                <input type="hidden" name="playlistId" value="<%= playlist.id %>">
+                                                <input type="hidden" name="songId" value="<%= song.id %>">
                                                 <button type="submit">Remove from playlist</button>
                                             </form>
                                         </div>
@@ -708,41 +803,169 @@
                 <circle cx="18" cy="16" r="3" />
             </svg>
             <div>
-                <div id="track-name">Song Name</div>
-                <div style="font-size: 12px; color: #b3b3b3;">Artist Name</div>
+                <div class="song-title" style="font-size: 14px; color: #b3b3b3;">Choose a song</div>
+                <div class="song-artist" style="font-size: 12px; color: #b3b3b3;">from the playlist</div>
             </div>
         </div>
 
         <div class="controls">
-            <button id="prev"><i data-lucide="skip-back"></i></button>
-            <button id="play-pause"><i data-lucide="play"></i></button>
-            <button id="next"><i data-lucide="skip-forward"></i></button>
+            <button id="prev" disabled><i data-lucide="skip-back"></i></button>
+            <button id="play-pause" class="play-pause-btn" disabled><i data-lucide="play"></i></button>
+            <button id="next" disabled><i data-lucide="skip-forward"></i></button>
         </div>
-        <div class="progress-bar"><span id="progress"></span></div>
+        <div class="progress-bar">
+            <span id="progress"></span>
+        </div>
         <div class="controls">
-            <button><i data-lucide="repeat"></i></button>
-            <button><i data-lucide="heart"></i></button>
+            <button disabled><i data-lucide="repeat"></i></button>
+            <button disabled><i data-lucide="heart"></i></button>
             <div class="volume-container">
-                <button id="volume-btn"><i data-lucide="volume-2"></i></button>
-                <div class="volume-slider" id="volume-slider"><input type="range" min="0" max="100" value="50"></div>
+                <button id="volume-btn" disabled><i data-lucide="volume-2"></i></button>
+                <div class="volume-slider" id="volume-slider">
+                    <input type="range" min="0" max="100" value="50">
+                </div>
             </div>
         </div>
     </div>
+
+    <audio id="audio-player"></audio>
 
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             const menuBtn = document.getElementById("menu-btn");
             const sidebar = document.querySelector(".sidebar");
             const body = document.body;
+            const audioPlayer = document.getElementById('audio-player');
+            const playPauseBtn = document.getElementById('play-pause');
+            const progressBar = document.getElementById('progress');
+            const volumeBtn = document.getElementById('volume-btn');
+            const volumeSlider = document.getElementById('volume-slider');
+            const volumeInput = volumeSlider.querySelector('input');
+            const progressContainer = document.querySelector('.progress-bar');
+
+            // Add navigation functionality for sidebar items
+            const sidebarItems = sidebar.querySelectorAll('ul li');
+            
+            // Function to set active sidebar item based on current URL
+            function setActiveSidebarItem() {
+                const currentPath = window.location.pathname;
+                sidebarItems.forEach((item, index) => {
+                    // Remove active class from all items first
+                    item.classList.remove('active');
+                    
+                    // Add active class based on current path
+                    switch(currentPath) {
+                        case '/':
+                            if (index === 0) item.classList.add('active');
+                            break;
+                        case '/liked-songs':
+                            if (index === 1) item.classList.add('active');
+                            break;
+                        case '/playlists':
+                            if (index === 2) item.classList.add('active');
+                            break;
+                        case '/mood-based':
+                            if (index === 3) item.classList.add('active');
+                            break;
+                        case '/premium':
+                            if (index === 4) item.classList.add('active');
+                            break;
+                        case '/profile':
+                            if (index === 5) item.classList.add('active');
+                            break;
+                    }
+                });
+            }
+
+            // Set active item on page load
+            setActiveSidebarItem();
+
+            sidebarItems.forEach((item, index) => {
+                item.addEventListener('click', () => {
+                    switch(index) {
+                        case 0: // Home
+                            window.location.href = '/';
+                            break;
+                        case 1: // Liked Songs
+                            window.location.href = '/liked-songs';
+                            break;
+                        case 2: // Playlists
+                            window.location.href = '/playlists';
+                            break;
+                        case 3: // Mood-based
+                            window.location.href = '/mood-based';
+                            break;
+                        case 4: // Premium
+                            window.location.href = '/premium';
+                            break;
+                        case 5: // Profile
+                            window.location.href = '/profile';
+                            break;
+                    }
+                });
+
+                // Add hover effect styles
+                item.style.cursor = 'pointer';
+                item.addEventListener('mouseenter', () => {
+                    item.style.background = '#282828';
+                    item.style.borderRadius = '8px';
+                });
+                item.addEventListener('mouseleave', () => {
+                    item.style.background = 'transparent';
+                });
+            });
 
             menuBtn.addEventListener("click", function () {
                 sidebar.classList.toggle("closed");
                 body.classList.toggle("sidebar-open");
             });
 
-            document.getElementById('volume-btn').addEventListener('click', () => {
-                const slider = document.getElementById('volume-slider');
-                slider.style.display = slider.style.display === 'block' ? 'none' : 'block';
+            // Volume control
+            volumeBtn.addEventListener('click', () => {
+                volumeSlider.style.display = volumeSlider.style.display === 'block' ? 'none' : 'block';
+            });
+
+            volumeInput.addEventListener('input', (e) => {
+                const value = e.target.value;
+                audioPlayer.volume = value / 100;
+                // Update the slider background
+                volumeInput.style.setProperty('--volume-percentage', `${value}%`);
+                
+                // Update volume icon based on level
+                const volumeIcon = volumeBtn.querySelector('i');
+                if (value == 0) {
+                    volumeIcon.setAttribute('data-lucide', 'volume-x');
+                } else if (value < 50) {
+                    volumeIcon.setAttribute('data-lucide', 'volume-1');
+                } else {
+                    volumeIcon.setAttribute('data-lucide', 'volume-2');
+                }
+                lucide.createIcons();
+            });
+
+            // Play/Pause control
+            playPauseBtn.addEventListener('click', () => {
+                if (audioPlayer.paused) {
+                    audioPlayer.play();
+                    playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
+                } else {
+                    audioPlayer.pause();
+                    playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
+                }
+                lucide.createIcons();
+            });
+
+            // Progress bar update and click handling
+            audioPlayer.addEventListener('timeupdate', () => {
+                const progress = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+                progressBar.style.width = `${progress}%`;
+            });
+
+            // Click on progress bar to seek
+            progressContainer.addEventListener('click', (e) => {
+                const rect = progressContainer.getBoundingClientRect();
+                const pos = (e.clientX - rect.left) / rect.width;
+                audioPlayer.currentTime = pos * audioPlayer.duration;
             });
 
             // Simulate hover effect for song actions
@@ -767,8 +990,50 @@
                 });
             });
 
+            // Add styles for disabled buttons
+            const style = document.createElement('style');
+            style.textContent = `
+                .music-controls button[disabled] {
+                    opacity: 0.5;
+                    cursor: not-allowed;
+                }
+                .music-controls button[disabled]:hover {
+                    transform: none;
+                }
+            `;
+            document.head.appendChild(style);
+
             lucide.createIcons();
         });
+
+        function playSong(title, audio, image, artist) {
+            // Enable all controls when a song is played
+            document.querySelectorAll('.music-controls button').forEach(button => {
+                button.disabled = false;
+            });
+
+            // Update the music player UI
+            const trackInfo = document.querySelector('.track-info');
+            trackInfo.innerHTML = `
+                <div class="song-cover">
+                    <img src="${image}" alt="${title}" style="width: 56px; height: 56px; border-radius: 4px;">
+                </div>
+                <div>
+                    <div class="song-title" style="font-size: 14px; color: white;">${title}</div>
+                    <div class="song-artist" style="font-size: 12px; color: #b3b3b3;">${artist}</div>
+                </div>
+            `;
+            
+            // Update the audio source and play
+            const audioPlayer = document.getElementById('audio-player');
+            audioPlayer.src = audio;
+            audioPlayer.play();
+            
+            // Update play/pause button
+            const playPauseBtn = document.getElementById('play-pause');
+            playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
+            lucide.createIcons();
+        }
     </script>
 </body>
 

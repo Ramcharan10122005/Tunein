@@ -36,6 +36,63 @@
             fill: #9E1C1C;
             stroke: #9E1C1C;
         }
+
+        .ad-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .ad-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+            height: 100%;
+            padding: 20px;
+        }
+
+        .ad-image {
+            width: 100%;
+            height: 80vh;
+            object-fit: contain;
+            border-radius: 8px;
+        }
+
+        .ad-title {
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .ad-timer {
+            color: #b3b3b3;
+            font-size: 18px;
+            text-align: center;
+            margin-top: 10px;
+        }
+
+        .ad-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 10px;
+        }
     </style>
 </head>
 
@@ -241,65 +298,79 @@
     </div>
 
     <div class="music-controls">
-        <div class="track-info">
-            <% if (locals.song) { %>
-                <img src="<%= song.image %>" alt="Song Image" class="song-icon">
-                <% } else { %>
-                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                        stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                        class="lucide lucide-music">
-                        <path d="M9 18V5l12-2v13" />
-                        <circle cx="6" cy="18" r="3" />
-                        <circle cx="18" cy="16" r="3" />
-                    </svg>
-                    <% } %>
-
-                        <div>
-                            <% if (locals.song) { %>
-                                <div id="track-name" onclick="redirectToPlay('<%= song.title %>', '<%= song.url %>')">
-                                    <%= song.title %>
-                                </div>
-                                <div id="artist-name" style="font-size: 12px; color: #b3b3b3; cursor: pointer;"
-                                    onclick="redirectToArtist('<%= song.artist %>')">
-                                    <%= song.artist %>
-                                </div>
-                                <% } else { %>
-                                    <div id="track-name">Song Name</div>
-                                    <div id="artist-name" style="font-size: 12px; color: #b3b3b3;">Artist Name</div>
-                                    <% } %>
-                        </div>
-        </div>
-
-        <div class="controls">
-            <audio id="audio-player">
-                <source id="audio-source" src="<%= locals.song ? locals.song.audio : '' %>" type="audio/mpeg">
-                Your browser does not support the audio tag.
-            </audio>
-            <button id="prev"><i data-lucide="skip-back"></i></button>
-            <button id="play-pause">
-                <i id="play-icon" data-lucide="play"></i>
-            </button>
-            <button id="next"><i data-lucide="skip-forward"></i></button>
-        </div>
-
-        <div class="progress-bar" id="progress-container">
-            <span id="progress"></span>
-        </div>
-
-        <div class="controls">
-            <button><i data-lucide="repeat"></i></button>
-            <button class="like-btn" id="like-btn" data-liked="false" onclick="redirectToLike()"><i
-                    data-lucide="heart"></i></button>
-            <div class="controls">
-                <button><i data-lucide="repeat"></i></button>
-                <div class="volume-container">
-                    <button id="volume-btn"><i data-lucide="volume-2"></i></button>
-                    <div class="volume-slider" id="volume-slider" style="bottom: 140px;left:-100px;">
-                        <input type="range" id="volume-input" min="0" max="100" value="50">
+        <% if (locals.showAd && locals.ad) { %>
+            <div class="ad-container" id="adContainer">
+                <div class="ad-content">
+                    <img src="<%= ad.image %>" alt="Advertisement" class="ad-image">
+                    <div class="ad-title">
+                        <%= ad.title %>
                     </div>
+                    <audio id="ad-audio" src="<%= ad.audio %>" preload="auto"></audio>
+                    <div class="ad-timer">Ad will end in <span id="adCountdown">30</span> seconds</div>
                 </div>
             </div>
-        </div>
+            <% } %>
+                <div class="track-info">
+                    <% if (locals.song) { %>
+                        <img src="<%= song.image %>" alt="Song Image" class="song-icon">
+                        <% } else { %>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                                fill="none" stroke="#eeecec" stroke-width="2" stroke-linecap="round"
+                                stroke-linejoin="round" class="lucide lucide-music">
+                                <path d="M9 18V5l12-2v13" />
+                                <circle cx="6" cy="18" r="3" />
+                                <circle cx="18" cy="16" r="3" />
+                            </svg>
+                            <% } %>
+
+                                <div>
+                                    <% if (locals.song) { %>
+                                        <div id="track-name"
+                                            onclick="redirectToPlay('<%= song.title %>', '<%= song.url %>')">
+                                            <%= song.title %>
+                                        </div>
+                                        <div id="artist-name" style="font-size: 12px; color: #b3b3b3; cursor: pointer;"
+                                            onclick="redirectToArtist('<%= song.artist %>')">
+                                            <%= song.artist %>
+                                        </div>
+                                        <% } else { %>
+                                            <div id="track-name">Song Name</div>
+                                            <div id="artist-name" style="font-size: 12px; color: #b3b3b3;">Artist Name
+                                            </div>
+                                            <% } %>
+                                </div>
+                </div>
+
+                <div class="controls">
+                    <audio id="audio-player">
+                        <source id="audio-source" src="<%= locals.song ? locals.song.audio : '' %>" type="audio/mpeg">
+                        Your browser does not support the audio tag.
+                    </audio>
+                    <button id="prev"><i data-lucide="skip-back"></i></button>
+                    <button id="play-pause">
+                        <i id="play-icon" data-lucide="play"></i>
+                    </button>
+                    <button id="next"><i data-lucide="skip-forward"></i></button>
+                </div>
+
+                <div class="progress-bar" id="progress-container">
+                    <span id="progress"></span>
+                </div>
+
+                <div class="controls">
+                    <button><i data-lucide="repeat"></i></button>
+                    <button class="like-btn" id="like-btn" data-liked="false" onclick="redirectToLike()"><i
+                            data-lucide="heart"></i></button>
+                    <div class="controls">
+                        <button><i data-lucide="repeat"></i></button>
+                        <div class="volume-container">
+                            <button id="volume-btn"><i data-lucide="volume-2"></i></button>
+                            <div class="volume-slider" id="volume-slider" style="bottom: 140px;left:-100px;">
+                                <input type="range" id="volume-input" min="0" max="100" value="50">
+                            </div>
+                        </div>
+                    </div>
+                </div>
     </div>
     </div>
 
@@ -442,11 +513,11 @@
             }
         });
         function updateVolumeSlider(value) {
-                const slider = document.querySelector('.volume-slider');
-                if (slider) {
-                    slider.style.setProperty('--volume-height', `${value}%`);
-                }
+            const slider = document.querySelector('.volume-slider');
+            if (slider) {
+                slider.style.setProperty('--volume-height', `${value}%`);
             }
+        }
         function redirectTo(pageName) {
             // For demo purposes just log the navigation
             // console.log(`Navigating to: ${pageName}`);
@@ -526,6 +597,71 @@
             currentGroup += step;
             updateCarouselPosition();
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const adContainer = document.getElementById('adContainer');
+            const adAudio = document.getElementById('ad-audio');
+            const adCountdown = document.getElementById('adCountdown');
+            const playPauseBtn = document.getElementById("play-pause");
+            if (adContainer && adAudio && adCountdown) {
+                let timeLeft = 30;
+
+                // Pause any background music
+                const mainAudio = document.getElementById('audio-player');
+                if (mainAudio) {
+                    mainAudio.pause();
+                }
+
+                // Ensure ad audio plays
+                adAudio.load(); // Explicitly load the audio
+                const playPromise = adAudio.play();
+
+                if (playPromise !== undefined) {
+                    playPromise.then(() => {
+                        console.log('Ad audio started playing');
+                    }).catch(error => {
+                        console.error('Error playing ad audio:', error);
+                        // Try playing again after user interaction
+                        document.addEventListener('click', function playOnClick() {
+                            adAudio.play().catch(console.error);
+                            document.removeEventListener('click', playOnClick);
+                        }, { once: true });
+                    });
+                }
+
+                const countdownInterval = setInterval(() => {
+                    timeLeft--;
+                    adCountdown.textContent = timeLeft;
+
+                    if (timeLeft <= 0) {
+                        closeAd();
+                    }
+                }, 1000);
+
+                adAudio.addEventListener('ended', () => {
+                    closeAd();
+                });
+
+                // Make closeAd function available globally
+                window.closeAd = function () {
+                    clearInterval(countdownInterval);
+                    adContainer.style.display = 'none';
+                    adAudio.pause();
+                    // Resume background music if it was playing
+                    if (mainAudio) {
+                        mainAudio.play();
+                        let icon = document.getElementById("play-icon");
+                        icon.setAttribute("data-lucide", icon.getAttribute("data-lucide") === "play" ? "pause" : "play");
+                        lucide.createIcons();
+                        if (audio.paused) {
+                            audio.play();
+                        } else {
+                            audio.pause();
+                        }
+                    }
+                };
+            }
+        });
     </script>
 </body>
 

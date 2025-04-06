@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Search | Tune In</title>
+    <title>Search Songs</title>
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/css/style.css">
@@ -24,7 +24,7 @@
             width: 250px;
             height: 100%;
             background: #181818;
-            transition: transform 0.3s;
+            transition: transform 0.3s ease;
             padding-top: 60px;
             transform: translateX(0);
             z-index: 2;
@@ -44,14 +44,39 @@
         .sidebar ul li {
             padding: 15px;
             cursor: pointer;
-            transition: background 0.3s;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             gap: 10px;
+            color: #b3b3b3;
+            text-decoration: none;
+            border-radius: 8px;
+            margin: 0 10px;
         }
 
         .sidebar ul li:hover {
             background: #282828;
+            color: white;
+        }
+
+        .sidebar ul li:hover svg {
+            transform: scale(1.1);
+        }
+
+        .sidebar ul li svg {
+            transition: transform 0.2s ease;
+        }
+
+        .sidebar ul li.active {
+            color: white;
+            background: #282828;
+        }
+
+        /* Add a divider before Premium */
+        .sidebar ul li:nth-child(5) {
+            margin-top: 20px;
+            border-top: 1px solid #333;
+            padding-top: 20px;
         }
 
         /* Sidebar playlist items */
@@ -115,7 +140,7 @@
         .menu-container {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 15px;
         }
 
         .menu-btn {
@@ -124,102 +149,24 @@
             background: none;
             border: none;
             color: white;
-            margin-left: 20px;
-            position: relative;
-            z-index: 4;
+            padding: 0;
+            display: flex;
+            align-items: center;
         }
 
         .tunein {
-            font-size: 20px;
+            font-size: 24px;
             font-weight: bold;
             color: white;
-            margin-left: 20px;
-            position: relative;
-            z-index: 3;
-        }
-
-        .search-container {
-            display: flex;
-            align-items: center;
-            background: #282828;
-            padding: 10px;
-            border-radius: 25px;
-            width: 420px;
-        }
-
-        .search-icon {
-            color: white;
-            margin-left: 10px;
-        }
-
-        .search-bar {
-            flex-grow: 1;
-            padding: 10px;
-            border: none;
-            outline: none;
-            background: transparent;
-            color: white;
-        }
-
-        /* Profile & Welcome Message */
-        .sign-in-box {
             display: flex;
             align-items: center;
             gap: 8px;
-            background-color: #b62020;
-            padding: 10px 15px;
-            border-radius: 6px;
-            color: white;
-            font-weight: bold;
-            font-size: 16px;
-            cursor: pointer;
-            border: none;
-            outline: none;
-            transition: background 0.3s ease;
         }
 
-        .sign-in-box:hover {
-            background-color: #9e1c1c;
-        }
-
-        .sign-in-box svg {
-            width: 20px;
-            height: 20px;
-            stroke: #eeecec;
-        }
-
-        .username-container {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            width: 64px;
+        .tunein svg {
+            width: 28px;
             height: 28px;
-            padding: 12px 12px;
-            padding-top: 0;
-            padding-bottom: 0;
-            margin-right: 150px;
-            color: white;
-            font-weight: bold;
-            font-size: 10px;
-            cursor: pointer;
-            border: none;
-            outline: none;
-            font-size: 20px;
-            flex-direction: column;
-        }
-
-        .usernam-greet {
-            margin-top: -10px;
-            color: white;
-            font-weight: bold;
-        }
-
-        .username-name {
-            margin-top: -25px;
-            color: red;
-            font-family: 'Pacifico', cursive;
-            font-weight: bold;
-            letter-spacing: 2px;
+            stroke: #b62020;
         }
 
         /* Main Content */
@@ -230,7 +177,7 @@
             margin-top: 80px;
             margin-bottom: 80px;
             width: calc(100% - 250px);
-            transition: all 0.3s;
+            transition: all 0.3s ease;
         }
 
         body.sidebar-open .main-content {
@@ -243,46 +190,70 @@
             width: 100%;
         }
 
-        /* Search Results */
+        /* Search Container */
+        .search-container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 25px;
+            background: #282828;
+            color: white;
+            font-size: 16px;
+            margin-bottom: 20px;
+        }
+
         .search-results {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
             gap: 20px;
-            padding: 20px;
+            padding: 20px 0;
         }
 
         .song-card {
-            background: #282828;
+            background: #181818;
             border-radius: 8px;
-            padding: 15px;
+            padding: 16px;
+            transition: background 0.3s;
             cursor: pointer;
-            transition: transform 0.2s ease, background-color 0.2s ease;
         }
 
         .song-card:hover {
-            transform: translateY(-5px);
-            background: #383838;
+            background: #282828;
         }
 
-        .song-card img {
+        .song-cover {
             width: 100%;
             aspect-ratio: 1;
-            object-fit: cover;
             border-radius: 4px;
-            margin-bottom: 10px;
+            margin-bottom: 12px;
+            overflow: hidden;
         }
 
-        .song-card h4 {
-            margin: 0;
-            color: #fff;
-            font-size: 16px;
+        .song-cover img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .song-info {
+            text-align: left;
+        }
+
+        .song-title {
+            font-weight: bold;
+            margin-bottom: 4px;
             white-space: nowrap;
             overflow: hidden;
             text-overflow: ellipsis;
         }
 
-        .song-card p {
-            margin: 5px 0 0;
+        .song-artist {
             color: #b3b3b3;
             font-size: 14px;
             white-space: nowrap;
@@ -296,14 +267,22 @@
             border: none;
             padding: 8px 16px;
             border-radius: 20px;
+            margin-top: 12px;
             cursor: pointer;
-            margin-top: 10px;
             width: 100%;
-            transition: background-color 0.2s ease;
+            transition: background 0.2s;
         }
 
         .add-button:hover {
             background: #9e1c1c;
+        }
+
+        /* No results message */
+        .no-results {
+            text-align: center;
+            color: #b3b3b3;
+            padding: 40px;
+            font-size: 16px;
         }
 
         /* Full-Width Music Bar */
@@ -485,53 +464,76 @@
     <header>
         <div class="menu-container">
             <button class="menu-btn" id="menu-btn"><i data-lucide="list"></i></button>
-            <span class="tunein"><img src="/images/Copy_of_Copy_of_TuneIn-removebg-preview.png" alt="TuneIn Logo">Tune In</span>
-        </div>
-        <div class="search-container">
-            <form id="search-form" onsubmit="handleSearch(event)">
-                <i data-lucide="search" class="search-icon"></i>
-                <input type="text" name="query" id="search-input" placeholder="Search songs..." class="search-bar">
-                <button type="submit" style="display: none;"></button>
-            </form>
-        </div>
-        <% if (locals.user) { %>
-            <div class="username-container">
-                <p class="usernam-greet">Welcome,</p>
-                <p class="username-name"><%= locals.user %>!</p>
+            <div class="tunein">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-music-4"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+                Tune In
             </div>
-        <% } else { %>
-            <div class="sign-in-box" onclick="window.location.href='/login'">
-                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-                    stroke="#eeecec" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    class="lucide lucide-user-round-pen">
-                    <path d="M2 21a8 8 0 0 1 10.821-7.487" />
-                    <path d="M21.378 16.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
-                    <circle cx="10" cy="8" r="5" />
-                </svg>
-                <span>Sign In</span>
-            </div>
-        <% } %>
+        </div>
     </header>
 
     <div class="sidebar">
         <ul>
-            <li onclick="redirectTo('')">
-                <i data-lucide="house"></i> Home
+            <li onclick="window.location.href='/'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-house">
+                    <path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8" />
+                    <path
+                        d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
+                </svg> Home
             </li>
-            <li onclick="redirectTo('liked-songs')">
-                <i data-lucide="heart"></i> Liked Songs
+            <li onclick="window.location.href='/liked-songs'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-heart">
+                    <path
+                        d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z" />
+                </svg> Liked Songs
             </li>
-            <li onclick="redirectTo('playlists')">
-                <i data-lucide="list-music"></i> Playlists
+            <li onclick="window.location.href='/playlists'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-list-music">
+                    <path d="M21 15V6" />
+                    <path d="M18.5 18a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" />
+                    <path d="M12 12H3" />
+                    <path d="M16 6H3" />
+                    <path d="M12 18H3" />
+                </svg> Playlists
             </li>
-            <li onclick="redirectTo('Mood-based')">
-                <i data-lucide="smile-plus"></i> Mood-based
+            <li onclick="window.location.href='/Mood-based'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-smile-plus">
+                    <path d="M22 11v1a10 10 0 1 1-9-10" />
+                    <path d="M8 14s1.5 2 4 2 4-2 4-2" />
+                    <line x1="9" x2="9.01" y1="9" y2="9" />
+                    <line x1="15" x2="15.01" y1="9" y2="9" />
+                    <path d="M16 5h6" />
+                    <path d="M19 2v6" />
+                </svg> Mood-based
             </li>
-            <li onclick="redirectTo('premium')">
-                <i data-lucide="crown"></i> Premium
+            <li onclick="window.location.href='/premium'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-crown">
+                    <path d="m2 4 3 12h14l3-12-6 7-4-7-4 7-6-7zm3 16h14"/>
+                </svg> Premium
             </li>
-            <li onclick="redirectTo('profile')">
-                <i data-lucide="user-pen"></i> Profile
+            <li onclick="window.location.href='/profile'">
+                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none"
+                    stroke="#b62020" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    class="lucide lucide-user-cog">
+                    <circle cx="12" cy="12" r="3"/>
+                    <path d="M12 1v2"/>
+                    <path d="M12 21v-2"/>
+                    <path d="M4.22 4.22l1.42 1.42"/>
+                    <path d="M18.36 18.36l1.42 1.42"/>
+                    <path d="M1 12h2"/>
+                    <path d="M21 12h2"/>
+                    <path d="M4.22 19.78l1.42-1.42"/>
+                    <path d="M18.36 5.64l1.42-1.42"/>
+                </svg> Profile
             </li>
         </ul>
 
@@ -581,8 +583,11 @@
             </div>
         <% } %>
 
-        <div id="search-results" class="search-results">
-            <!-- Search results will be populated here -->
+        <div class="search-container">
+            <input type="text" id="search-input" class="search-input" placeholder="Search for songs...">
+            <div id="search-results" class="search-results">
+                <!-- Search results will be dynamically added here -->
+            </div>
         </div>
     </div>
 
@@ -618,72 +623,12 @@
     </div>
 
     <script>
-        // Global function for adding songs to playlist
-        async function addToPlaylist(title) {
-            window.location.href = `add-to-playlist/${title}`;
-            // Get playlist ID from URL parameters or from the page
-            // const urlParams = new URLSearchParams(window.location.search);
-            // const playlistId = urlParams.get('playlistId');
-            // const playlistName = urlParams.get('playlistName');
-            
-            // if (!playlistId) {
-            //     alert('No playlist selected. Please go back to your playlist and try again.');
-            //     return;
-            // }
-            
-            // try {
-            //     // First get the song ID
-            //     const songResponse = await fetch(`/get-song-id?title=${encodeURIComponent(title)}`);
-            //     const songData = await songResponse.json();
-                
-            //     if (!songData.success) {
-            //         alert('Failed to find song: ' + songData.error);
-            //         return;
-            //     }
-                
-            //     // Then add to playlist
-            //     const response = await fetch('/add-to-playlist', {
-            //         method: 'POST',
-            //         headers: {
-            //             'Content-Type': 'application/json'
-            //         },
-            //         body: JSON.stringify({
-            //             playlistId: playlistId,
-            //             songId: songData.songId
-            //         })
-            //     });
-                
-            //     const result = await response.json();
-                
-            //     if (result.success) {
-            //         alert('Song added to playlist successfully!');
-            //         // Redirect back to the playlist page
-            //         if (playlistName) {
-            //             window.location.href = `/playlists/songs?name=${encodeURIComponent(playlistName)}`;
-            //         } else {
-            //             window.location.href = '/playlists';
-            //         }
-            //     } else {
-            //         alert('Failed to add song to playlist: ' + result.error);
-            //     }
-            // } catch (error) {
-            //     console.error('Error adding song to playlist:', error);
-            //     alert('Error adding song to playlist');
-            // }
-        }
-
         document.addEventListener("DOMContentLoaded", function () {
-            // Initialize Lucide icons
-            lucide.createIcons();
-
-            // Sidebar functionality
             const menuBtn = document.getElementById("menu-btn");
             const sidebar = document.querySelector(".sidebar");
             const body = document.body;
-
-            // Show sidebar by default
-            sidebar.classList.add("open");
-            body.classList.add("sidebar-open");
+            const searchInput = document.getElementById('search-input');
+            const searchResults = document.getElementById('search-results');
 
             // Toggle sidebar
             menuBtn.addEventListener("click", function () {
@@ -698,57 +643,62 @@
             });
 
             // Search functionality
-            const searchForm = document.getElementById('search-form');
-            const searchInput = document.getElementById('search-input');
-            const searchResults = document.getElementById('search-results');
-            const playlistSelect = document.getElementById('playlist-select');
-
-            searchForm.addEventListener('submit', handleSearch);
-            searchInput.addEventListener('input', handleSearch);
-
-            async function handleSearch(event) {
-                event.preventDefault();
-                const query = searchInput.value.trim();
-
-                if (query.length === 0) {
-                    searchResults.innerHTML = '';
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`/search?query=${encodeURIComponent(query)}`);
-                    const songs = await response.json();
-
-                    // Clear previous results
-                    searchResults.innerHTML = '';
-
-                    // Display new results
-                    songs.forEach(song => {
-                        const songCard = document.createElement('div');
-                        songCard.className = 'song-card';
-                        songCard.innerHTML = `
-                            <img src="${song.image}" alt="${song.title}">
-                            <h4>${song.title}</h4>
-                            <p>${song.artist}</p>
-                            <button class="add-button" onclick="addToPlaylist('${song.title}')">Add to Playlist</button>
-                        `;
-                        searchResults.appendChild(songCard);
-                    });
-
-                    // Show message if no results found
-                    if (songs.length === 0) {
-                        searchResults.innerHTML = '<div style="text-align: center; color: #b3b3b3; padding: 20px;">No songs found. Try a different search term.</div>';
+            let debounceTimer;
+            searchInput.addEventListener('input', function() {
+                clearTimeout(debounceTimer);
+                debounceTimer = setTimeout(() => {
+                    const query = this.value.trim();
+                    if (query.length > 0) {
+                        fetch(`/search?query=${encodeURIComponent(query)}`)
+                            .then(response => response.json())
+                            .then(songs => {
+                                searchResults.innerHTML = '';
+                                if (songs.length === 0) {
+                                    searchResults.innerHTML = '<div class="no-results">No songs found</div>';
+                                    return;
+                                }
+                                songs.forEach(song => {
+                                    const songCard = document.createElement('div');
+                                    songCard.className = 'song-card';
+                                    songCard.innerHTML = `
+                                        <div class="song-cover">
+                                            <img src="${song.image}" alt="${song.title}">
+                                        </div>
+                                        <div class="song-info">
+                                            <div class="song-title">${song.title}</div>
+                                            <div class="song-artist">${song.artist}</div>
+                                            <button class="add-button" onclick="addToPlaylist('${song.title}')">
+                                                Add to Playlist
+                                            </button>
+                                        </div>
+                                    `;
+                                    searchResults.appendChild(songCard);
+                                });
+                            })
+                            .catch(error => {
+                                console.error('Error searching songs:', error);
+                                searchResults.innerHTML = '<div class="no-results">Error searching songs</div>';
+                            });
+                    } else {
+                        searchResults.innerHTML = '';
                     }
-                } catch (error) {
-                    console.error('Error searching:', error);
-                    searchResults.innerHTML = '<div style="text-align: center; color: #b3b3b3; padding: 20px;">Error searching songs. Please try again.</div>';
-                }
+                }, 300);
+            });
+        });
+
+        function addToPlaylist(title) {
+            const playlistId = new URLSearchParams(window.location.search).get('playlistId');
+            const playlistName = new URLSearchParams(window.location.search).get('playlistName');
+            
+            if (!playlistId || !playlistName) {
+                alert('Playlist information is missing');
+                return;
             }
 
-            function redirectTo(page) {
-                window.location.href = `/${page}`;
-            }
-        });
+            window.location.href = `/add-to-playlist/${encodeURIComponent(title)}`;
+        }
+
+        lucide.createIcons();
     </script>
 </body>
 </html> 

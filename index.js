@@ -45,7 +45,39 @@ let users = [
     { email: "kundenaramcharan@gmail.com", username: "Ramcharan", password: "hashedPassword" },
     { email: "202311063@diu.iiitvadodara.ac.in", username: "Ramcharan", password: "hashedPassword" }
 ];
-
+let played_times = 0;
+let ads = [
+    {
+        title: "Ad 1",
+        image: "/images/ad.png",
+        audio: "/ads/ad 1.mp3"
+    },
+    {
+        title: "Ad 2",
+        image: "/images/ad.png",
+        audio: "/ads/ad 2.mp3"
+    },
+    {
+        title: "Ad 3",
+        image: "/images/ad.png",
+        audio: "/ads/ad 3.mp3"
+    },
+    {
+        title: "Ad 4",
+        image: "/images/ad.png",
+        audio: "/ads/ad 4.mp3"
+    },
+    {
+        title: "Ad 5",
+        image: "/images/ad.png",
+        audio: "/ads/ad 5.mp3"
+    },
+    {
+        title: "Ad 6",
+        image: "/images/ad.png",
+        audio: "/ads/ad 6.mp3"
+    }
+];
 let otpStore = {};
 const db = new pg.Client({
     user: process.env.DB_USER,
@@ -390,7 +422,16 @@ app.get("/playlists", async(req, res) => {
 
     try {
         const userId = req.session.userId;
-        const playlistsResult = await db.query("SELECT * FROM playlists WHERE user_id = $1", [userId]);
+        // Modified query to get distinct playlists
+        const playlistsResult = await db.query(`
+            SELECT DISTINCT ON (playlist_name) 
+                id,
+                playlist_name,
+                user_id
+            FROM playlists 
+            WHERE user_id = $1 
+            ORDER BY playlist_name, id
+        `, [userId]);
         
         // Format playlists data for the template
         const playlists = playlistsResult.rows.map(playlist => {
@@ -438,8 +479,11 @@ app.get("/playlists/songs", async (req, res) => {
                 p.playlist_name AS playlist_name,
                 p.user_id,
                 u.username,
+                s.id AS song_id,
                 s.title AS song_title,
-                s.artist
+                s.artist,
+                s.cover,
+                s.song
             FROM playlists p
             JOIN users u ON p.user_id = u.id
             LEFT JOIN playlists ps ON ps.id = p.id
@@ -456,7 +500,8 @@ app.get("/playlists/songs", async (req, res) => {
 
             if (!playlistsMap.has(key)) {
                 playlistsMap.set(key, {
-                    userId: row.userid,
+                    id: row.playlist_id,
+                    userId: row.user_id,
                     username: row.username,
                     name: row.playlist_name,
                     songs: []
@@ -465,8 +510,11 @@ app.get("/playlists/songs", async (req, res) => {
 
             if (row.song_title && row.artist) {
                 playlistsMap.get(key).songs.push({
+                    id: row.song_id,
                     name: row.song_title,
-                    artist: row.artist
+                    artist: row.artist,
+                    image: row.cover ? `data:image/jpeg;base64,${row.cover.toString('base64')}` : null,
+                    audio: row.song ? `data:audio/mpeg;base64,${row.song.toString('base64')}` : null
                 });
             }
         });
@@ -523,6 +571,39 @@ app.get("/song/:title", async (req, res) => {
         res.status(500).json({ error: "Internal server error" });
     }
 });
+app.post("/remove-liked", async (req, res) => {
+    const songId = req.body.songId;
+    await db.query("DELETE FROM liked WHERE songid = $1", [songId]);
+    res.redirect("/liked-songs");
+})
+app.post("/remove-playlist", async (req, res) => {
+    const songName = req.body.songName ;
+    const userId = req.body.userId;
+    await db.query("DELETE FROM playlists WHERE playlist_name = $1 AND user_id = $2", [songName, userId]);
+    res.redirect("/playlists");
+})
+app.post("/remove-from-playlist", async (req, res) => {
+    const playlistId = req.body.playlistId;
+    const songId = req.body.songId;
+    
+    // First, get the playlist to verify ownership
+    const playlistCheck = await db.query(
+        "SELECT * FROM playlists WHERE id = $1 AND user_id = $2",
+        [playlistId, req.session.userId]
+    );
+    
+    if (playlistCheck.rows.length === 0) {
+        return res.status(403).send("You don't have permission to modify this playlist");
+    }
+    
+    // Update the playlist to remove the song
+    await db.query(
+        "UPDATE playlists SET song_id = NULL WHERE id = $1 AND song_id = $2 AND user_id = $3",
+        [playlistId, songId, req.session.userId]
+    );
+    
+    res.redirect("/playlists/songs?name=" + encodeURIComponent(req.session.playlistName));
+})
 app.get("/liked-songs", async (req, res) => {
     if (!req.session.userId) {
         return res.redirect("/login");
@@ -609,6 +690,12 @@ function formatDuration(duration) {
     return "0:00";
 }
 
+// Function to get next ad
+function getNextAd() {
+    const adIndex = Math.floor((played_times - 1) / 5) % ads.length;
+    return ads[adIndex];
+}
+
 app.get("/play/:title", async (req, res) => {
     try {
         const title = decodeURIComponent(req.params.title);
@@ -627,7 +714,14 @@ app.get("/play/:title", async (req, res) => {
         const imageBase64 = `data:image/jpeg;base64,${songdet.cover.toString("base64")}`;
         const audioBase64 = `data:audio/mpeg;base64,${songdet.song.toString("base64")}`;
 
-        // Render EJS with song details
+        // Increment played_times before checking for ad
+        played_times++;
+
+        // Check if it's time to show an ad (every 5 clicks)
+        const shouldShowAd = played_times % 5 === 0;
+        const currentAd = shouldShowAd ? getNextAd() : null;
+
+        // Render EJS with song details and ad info
         res.render("dashboard", {
             song: {
                 title: songdet.title,
@@ -635,7 +729,10 @@ app.get("/play/:title", async (req, res) => {
                 image: imageBase64,
                 audio: audioBase64,
             },
-            user:req.session.username
+            user: req.session.username,
+            showAd: shouldShowAd,
+            ad: currentAd,
+            played_times: played_times // Pass the counter to the view
         });
     } catch (err) {
         console.error(err);
@@ -1083,6 +1180,7 @@ app.get("/search-page", (req, res) => {
         playlistName: playlistName
     });
 });
+
 app.get("/add-to-playlist/:title", async (req, res) => {
     if (!req.session.userId) {
         return res.status(401).json({ success: false, error: "User not authenticated" });
@@ -1092,7 +1190,6 @@ app.get("/add-to-playlist/:title", async (req, res) => {
         const title = req.params.title;
         const playlistName = req.session.playlistName;
         const userId = req.session.userId;
-        
         if (!playlistName) {
             return res.status(400).json({ success: false, error: "No playlist selected" });
         }
