@@ -8,6 +8,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link href="https://fonts.googleapis.com/css2?family=Pacifico&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="/main.css">
+    <link rel="stylesheet" href="/responsive.css">
+    <link rel="stylesheet" href="/responsive.css">
     <style>
         .like-btn {
             background: none;
@@ -661,7 +663,7 @@
                         songElement.className = 'song';
                         songElement.id = 'searched-song';
                         songElement.innerHTML = `
-                            <img src="${song.image}" alt="${song.title}">
+                            <img src="${song.image}" alt="${song.title} style="width:64px;height:64px"">
                             <div>
                                 <h4>${song.title}</h4>
                                 <p>${song.artist}</p>
