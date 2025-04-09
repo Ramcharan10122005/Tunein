@@ -14,23 +14,37 @@ import env from "dotenv";
 import crypto from "crypto";
 import nodemailer from "nodemailer";
 import Razorpay from "razorpay";
+import NodeCache from 'node-cache';
+import compression from 'compression';
 
 const app = express();
-const port = 3000;
+const port = process.env.PORT || 3000;
 const saltrounds = 10;
 env.config();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+
+// Initialize cache with a 5-minute TTL
+const cache = new NodeCache({ stdTTL: 300, checkperiod: 600 });
+
+// Set up view engine and static files
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
+
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, "public")));
 
 app.use(
     session({
         secret: process.env.SESSION_SECRET,
         resave: false,
         saveUninitialized: true,
+        cookie: {
+            secure: process.env.NODE_ENV === 'production',
+            maxAge: 24 * 60 * 60 * 1000 // 24 hours
+        }
     })
 );
 
@@ -40,6 +54,9 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use(passport.initialize());
 app.use(passport.session());
 
+// Add compression middleware
+app.use(compression());
+
 // Declare isPremium variable
 let isPremium = false;
 
@@ -47,7 +64,7 @@ let isPremium = false;
 app.use(async (req, res, next) => {
     if (req.session && req.session.userId) {
         try {
-            const subscriptionResult = await db.query(
+            const subscriptionResult = await query(
                 `SELECT * FROM premium_users 
                 WHERE user_id = $1 
                 AND subscription_end_date > CURRENT_TIMESTAMP 
@@ -111,7 +128,54 @@ const db = new pg.Client({
     database: process.env.DB_DATABASE,
     password: process.env.DB_PASSWORD,
     port: process.env.DB_PORT,
-})
+    connectionTimeoutMillis: 5000,
+    idle_in_transaction_session_timeout: 10000,
+    statement_timeout: 10000
+});
+
+// Optimize database pool configuration
+const pool = new pg.Pool({
+    user: process.env.DB_USER,
+    host: process.env.DB_HOST,
+    database: process.env.DB_DATABASE,
+    password: process.env.DB_PASSWORD,
+    port: process.env.DB_PORT,
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+    application_name: 'tunein_app'
+});
+
+// Enhanced query function with caching
+const query = async (text, params, cacheKey = null) => {
+    const start = Date.now();
+    
+    // Check cache first if cacheKey is provided
+    if (cacheKey) {
+        const cachedResult = cache.get(cacheKey);
+        if (cachedResult) {
+            console.log('Cache hit for:', cacheKey);
+            return cachedResult;
+        }
+    }
+
+    try {
+        const res = await pool.query(text, params);
+        const duration = Date.now() - start;
+        console.log('Executed query', { text, duration, rows: res.rowCount });
+
+        // Cache the result if cacheKey is provided
+        if (cacheKey && res.rows.length > 0) {
+            cache.set(cacheKey, res);
+        }
+
+        return res;
+    } catch (error) {
+        console.error('Error executing query', { text, error });
+        throw error;
+    }
+};
+
 db.connect()
     .then(() => console.log("✅ Connected to PostgreSQL"))
     .catch(err => console.error("❌ Database connection error:", err));
@@ -139,7 +203,7 @@ app.get(
             req.session.userId = req.user.id;
             
             // Check premium status
-            const subscriptionResult = await db.query(
+            const subscriptionResult = await query(
                 `SELECT * FROM premium_users 
                 WHERE user_id = $1 
                 AND subscription_end_date > CURRENT_TIMESTAMP 
@@ -170,7 +234,7 @@ app.get(
             req.session.userId = req.user.id;
             
             // Check premium status
-            const subscriptionResult = await db.query(
+            const subscriptionResult = await query(
                 `SELECT * FROM premium_users 
                 WHERE user_id = $1 
                 AND subscription_end_date > CURRENT_TIMESTAMP 
@@ -201,7 +265,7 @@ app.get("/signup", (req, res) => {
 });
 app.get("/random-song", async (req, res) => {
     try {
-        const result = await db.query("SELECT title FROM songs ORDER BY RANDOM() LIMIT 1");
+        const result = await query("SELECT title FROM songs ORDER BY RANDOM() LIMIT 1");
         if (result.rows.length > 0) {
             const randomSong = result.rows[0];
             res.redirect(`/play/${encodeURIComponent(randomSong.title)}`);
@@ -241,7 +305,7 @@ app.get("/based", async (req, res) => {
         }
         
         mood = mood.toLowerCase();
-        const songs = await db.query("SELECT * FROM songs WHERE mood = $1", [mood]);
+        const songs = await query("SELECT * FROM songs WHERE mood = $1", [mood]);
 
         res.render("based.ejs", {
             songs: songs.rows,
@@ -259,7 +323,7 @@ app.post("/signup", async (req, res) => {
     try {
         const { username, email, password } = req.body;
 
-        const user = await db.query("SELECT * FROM users WHERE username = $1 OR email = $2", [username, email]);
+        const user = await query("SELECT * FROM users WHERE username = $1 OR email = $2", [username, email]);
         if (user.rows.length > 0) {
             return res.render("signup", {
                 error: true,
@@ -272,7 +336,7 @@ app.post("/signup", async (req, res) => {
         const hashedPassword = await bcrypt.hash(password, saltrounds);
 
         // Insert new user into the database
-        const result = await db.query(
+        const result = await query(
             "INSERT INTO users (username, email, password) VALUES ($1, $2, $3) RETURNING *",
             [username, email, hashedPassword]
         );
@@ -303,7 +367,7 @@ app.post("/login", (req, res, next) => {
         req.session.userId = user.id;
 
         // Check premium status
-        const subscriptionResult = await db.query(
+        const subscriptionResult = await query(
             `SELECT * FROM premium_users 
             WHERE user_id = $1 
             AND subscription_end_date > CURRENT_TIMESTAMP 
@@ -321,7 +385,7 @@ app.post("/login", (req, res, next) => {
 app.get("/check-email", async (req, res) => {
     try {
         const email = req.query.email;
-        const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+        const result = await query("SELECT * FROM users WHERE email = $1", [email]);
         res.json({ exists: result.rows.length > 0 });
     } catch (err) {
         console.error("Error checking email:", err);
@@ -332,7 +396,7 @@ app.get("/check-email", async (req, res) => {
 app.post("/reset", async (req, res) => {
     const email = req.body.email.trim();
     console.log("Entered Email:", email);
-    const user = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = await query("SELECT * FROM users WHERE email = $1", [email]);
     console.log(user);
     if (user.rows.length != 0) {
         req.session.resetEmail = email;
@@ -358,7 +422,7 @@ app.post("/new", async (req, res) => {
             })
         }
         const hashedPassword = await bcrypt.hash(password, saltrounds);
-        const user = await db.query("update users SET password = $1 WHERE email = $2", [hashedPassword, email]);
+        const user = await query("update users SET password = $1 WHERE email = $2", [hashedPassword, email]);
         req.session.resetEmail = null;
         res.redirect("/login");
     }
@@ -451,7 +515,7 @@ app.get("/like/:title", async (req, res) => {
         const lowercaseTitle = title.toLowerCase();
         console.log(title);
         // ✅ Fixed the WHERE clause
-        const result = await db.query("SELECT id FROM songs WHERE title = $1", [lowercaseTitle]);
+        const result = await query("SELECT id FROM songs WHERE title = $1", [lowercaseTitle]);
 
         if (result.rows.length === 0) {
             return res.status(404).json({ error: "Song not found" });
@@ -461,7 +525,7 @@ app.get("/like/:title", async (req, res) => {
         const userid = req.session.userId;
 
         // ✅ Prevents duplicate likes
-        await db.query(
+        await query(
             "INSERT INTO liked (songid, userid) VALUES ($1, $2) ON CONFLICT DO NOTHING",
             [songid, userid]
         );
@@ -495,7 +559,7 @@ app.post("/admin/login", async (req, res) => {
         const { username, password } = req.body;
         
         // Check if admin exists
-        const result = await db.query("SELECT * FROM admin WHERE username = $1", [username]);
+        const result = await query("SELECT * FROM admin WHERE username = $1", [username]);
         
         if (result.rows.length === 0) {
             return res.render("admin-login", {
@@ -538,9 +602,9 @@ app.get("/admin/logout", (req, res) => {
 // Modify the existing admin route to use the isAdmin middleware
 app.get("/admin", isAdmin, async (req, res) => {
     try {
-        const songsResult = await db.query("SELECT * FROM songs ORDER BY id DESC");
-        const unreadFeedbackResult = await db.query("SELECT COUNT(*) FROM feedback WHERE is_read = false");
-        const feedbacksResult = await db.query("SELECT * FROM feedback ORDER BY created_at DESC");
+        const songsResult = await query("SELECT * FROM songs ORDER BY id DESC");
+        const unreadFeedbackResult = await query("SELECT COUNT(*) FROM feedback WHERE is_read = false");
+        const feedbacksResult = await query("SELECT * FROM feedback ORDER BY created_at DESC");
         
         res.render("add", { 
             songs: songsResult.rows,
@@ -567,7 +631,7 @@ app.post("/add-song", upload.fields([{ name: "song" }, { name: "cover" }]), asyn
         const lowercaseGenre = genre.toLowerCase();
         const lowercaseMood = mood.toLowerCase();
 
-        await db.query(
+        await query(
             "INSERT INTO songs (title, artist, duration, song, cover, language, genre, mood) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)",
             [lowercaseTitle, lowercaseArtist, duration, songFile, coverFile, lowercaseLanguage, lowercaseGenre, lowercaseMood]
         );
@@ -585,11 +649,11 @@ app.post("/delete-song", isAdmin, async (req, res) => {
         const { songId } = req.body;
         
         // First delete from liked songs and playlists
-        await db.query("DELETE FROM liked WHERE songid = $1", [songId]);
-        await db.query("DELETE FROM playlists WHERE song_id = $1", [songId]);
+        await query("DELETE FROM liked WHERE songid = $1", [songId]);
+        await query("DELETE FROM playlists WHERE song_id = $1", [songId]);
         
         // Then delete the song itself
-        await db.query("DELETE FROM songs WHERE id = $1", [songId]);
+        await query("DELETE FROM songs WHERE id = $1", [songId]);
         
         res.redirect("/admin");
     } catch (error) {
@@ -607,7 +671,7 @@ app.get("/playlists", async(req, res) => {
     try {
         const userId = req.session.userId;
         // Modified query to get distinct playlists
-        const playlistsResult = await db.query(`
+        const playlistsResult = await query(`
             SELECT DISTINCT ON (playlist_name) 
                 id,
                 playlist_name,
@@ -643,7 +707,7 @@ app.post("/create-playlist", async(req, res) => {
         return res.status(401).json({ error: "User not authenticated" });
     }
     const name=req.body.playlistName;
-    await db.query("INSERT INTO playlists (playlist_name, user_id) VALUES ($1, $2)", [name, req.session.userId]);
+    await query("INSERT INTO playlists (playlist_name, user_id) VALUES ($1, $2)", [name, req.session.userId]);
     res.redirect("/playlists");
 })
 // Route to display songs in a playlist
@@ -657,7 +721,7 @@ app.get("/playlists/songs", async (req, res) => {
     req.session.playlistName=playlistName;
     try {
         // Fetch all playlists and their songs for the logged-in user
-        const playlistsResult = await db.query(`
+        const playlistsResult = await query(`
             SELECT 
                 p.id AS playlist_id,
                 p.playlist_name AS playlist_name,
@@ -727,7 +791,7 @@ app.get("/playlists/songs", async (req, res) => {
 // liked songs (Authenticated Route)
 app.get("/rand", async (req, res) => {
     try {
-        const result = await db.query(
+        const result = await query(
             "SELECT s.title, s.artist, s.cover, s.song FROM liked l JOIN songs s ON l.songid = s.id WHERE l.userid = $1 ORDER BY RANDOM() LIMIT 1", 
             [req.session.userId]
         );
@@ -769,7 +833,7 @@ app.get("/song/:title", async (req, res) => {
         const lowercaseTitle = title.toLowerCase();
         console.log(title);
 
-        const result = await db.query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [lowercaseTitle]);
+        const result = await query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [lowercaseTitle]);
 
         if (result.rows.length === 0) {
             return res.status(404).send("Song not found");
@@ -804,13 +868,13 @@ app.get("/song/:title", async (req, res) => {
 });
 app.post("/remove-liked", async (req, res) => {
     const songId = req.body.songId;
-    await db.query("DELETE FROM liked WHERE songid = $1", [songId]);
+    await query("DELETE FROM liked WHERE songid = $1", [songId]);
     res.redirect("/liked-songs");
 })
 app.post("/remove-playlist", async (req, res) => {
     const songName = req.body.songName ;
     const userId = req.body.userId;
-    await db.query("DELETE FROM playlists WHERE playlist_name = $1 AND user_id = $2", [songName, userId]);
+    await query("DELETE FROM playlists WHERE playlist_name = $1 AND user_id = $2", [songName, userId]);
     res.redirect("/playlists");
 })
 app.post("/remove-from-playlist", async (req, res) => {
@@ -818,7 +882,7 @@ app.post("/remove-from-playlist", async (req, res) => {
     const songId = req.body.songId;
     
     // First, get the playlist to verify ownership
-    const playlistCheck = await db.query(
+    const playlistCheck = await query(
         "SELECT * FROM playlists WHERE id = $1 AND user_id = $2",
         [playlistId, req.session.userId]
     );
@@ -828,7 +892,7 @@ app.post("/remove-from-playlist", async (req, res) => {
     }
     console.log(playlistId, songId, req.session.userId);
     // Update the playlist to remove the song
-    await db.query(
+    await query(
         "UPDATE playlists SET song_id = NULL WHERE song_id = $1 AND user_id = $2",
         [songId, req.session.userId]
     );
@@ -842,7 +906,7 @@ app.get("/liked-songs", async (req, res) => {
 
     try {
         // Get all liked songs for the current user with song details
-        const result = await db.query(`
+        const result = await query(`
             SELECT 
                 s.id, 
                 s.title, 
@@ -933,7 +997,7 @@ app.get("/play/:title", async (req, res) => {
         const lowercaseTitle = title.toLowerCase();
         console.log(title);
 
-        const result = await db.query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [lowercaseTitle]);
+        const result = await query("SELECT title, artist, cover, song FROM songs WHERE title = $1", [lowercaseTitle]);
 
         if (result.rows.length === 0) {
             return res.status(404).send("Song not found");
@@ -998,7 +1062,7 @@ passport.use(
     "local",
     new Strategy(async function verify(username, password, cb) {
       try {
-        const result = await db.query("SELECT * FROM users WHERE username = $1", [
+        const result = await query("SELECT * FROM users WHERE username = $1", [
           username,
         ]);
   
@@ -1033,24 +1097,32 @@ passport.use(
     new GoogleStrategy({
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: "http://localhost:3000/auth/google/callback",
+      callbackURL: "https://tunein-9fww7k5ln-ramcharan10122005s-projects.vercel.app/auth/google/callback",
       userProfileURL: "https://www.googleapis.com/oauth2/v3/userinfo",
+      passReqToCallback: true
     },
-    async (accessToken, refreshToken, profile, cb) => {
+    async (req, accessToken, refreshToken, profile, cb) => {
       try {
-        console.log("Google profile received:", profile); // Debug log
-        const result = await db.query("SELECT * FROM users WHERE email = $1", [profile.emails[0].value]);
+        console.log("Google profile received:", profile);
+        const email = profile.emails?.[0]?.value;
+        const username = profile.displayName || profile.emails?.[0]?.value.split('@')[0];
+        
+        if (!email) {
+          return cb(new Error("No email found in Google profile"));
+        }
+
+        const result = await query("SELECT * FROM users WHERE email = $1", [email]);
         
         if(result.rows.length === 0) {
           // Create new user
-          const newUser = await db.query(
+          const newUser = await query(
             "INSERT INTO users(username, email, password) VALUES($1, $2, $3) RETURNING *",
-            [profile.displayName, profile.emails[0].value, "google"]
+            [username, email, "google_oauth"]
           );
           return cb(null, {
             id: newUser.rows[0].id,
-            username: profile.displayName,
-            email: profile.emails[0].value
+            username: username,
+            email: email
           });
         } else {
           // Return existing user
@@ -1072,21 +1144,21 @@ passport.use(
         {
             clientID: process.env.GITHUB_CLIENT_ID,
             clientSecret: process.env.GITHUB_CLIENT_SECRET,
-            callbackURL: "http://localhost:3000/auth/github/callback",
+            callbackURL: "https://tunein-3fgm2i353-ramcharan10122005s-projects.vercel.app/auth/github/callback",
         },
         async (accessToken, refreshToken, profile, cb) => {
             try {
-                console.log("GitHub profile received:", profile); // Debugging
+                console.log("GitHub profile received:", profile);
 
-                const email = profile.emails?.[0]?.value || ""; // Get email (if available)
+                const email = profile.emails?.[0]?.value || "";
                 const username = profile.username || profile.displayName || "GitHubUser";
 
                 // Check if user already exists in the database by email
-                const result = await db.query("SELECT * FROM users WHERE email = $1", [email]);
+                const result = await query("SELECT * FROM users WHERE email = $1", [email]);
 
                 if (result.rows.length === 0) {
                     // Insert new user into the database
-                    const newUser = await db.query(
+                    const newUser = await query(
                         "INSERT INTO users(username, email, password) VALUES($1, $2, $3) RETURNING *",
                         [username, email, "github"]
                     );
@@ -1117,7 +1189,7 @@ passport.serializeUser((user, cb) => {
 
 passport.deserializeUser(async (id, cb) => {
     try {
-        const result = await db.query("SELECT * FROM users WHERE id = $1", [id]);
+        const result = await query("SELECT * FROM users WHERE id = $1", [id]);
         if (result.rows.length > 0) {
             cb(null, result.rows[0]);
         } else {
@@ -1132,28 +1204,29 @@ passport.deserializeUser(async (id, cb) => {
 // Search endpoint
 app.get("/search", async (req, res) => {
     try {
-        const query = req.query.query;
+        const query = req.query.q;
         if (!query) {
             return res.json([]);
         }
 
-        // Search in songs table by title, artist, language, genre, or mood
-        const result = await db.query(
-            "SELECT title, artist, cover, language, genre, mood FROM songs WHERE LOWER(title) LIKE LOWER($1) OR LOWER(artist) LIKE LOWER($1) OR LOWER(language) LIKE LOWER($1) OR LOWER(genre) LIKE LOWER($1) OR LOWER(mood) LIKE LOWER($1)",
-            [`%${query}%`]
+        const cacheKey = `search_${query}`;
+        const result = await query(
+            `SELECT title, artist, cover, language, genre, mood 
+             FROM songs 
+             WHERE LOWER(title) LIKE LOWER($1) 
+             OR LOWER(artist) LIKE LOWER($1) 
+             OR LOWER(language) LIKE LOWER($1) 
+             OR LOWER(genre) LIKE LOWER($1) 
+             OR LOWER(mood) LIKE LOWER($1)
+             LIMIT 50`,
+            [`%${query}%`],
+            cacheKey
         );
 
-        // Convert cover images to base64
-        const songs = result.rows.map(song => ({
-            title: song.title,
-            artist: song.artist,
-            image: `data:image/jpeg;base64,${song.cover.toString('base64')}`
-        }));
-
-        res.json(songs);
+        res.json(result.rows);
     } catch (err) {
-        console.error('Error searching songs:', err);
-        res.status(500).json({ error: 'Internal server error' });
+        console.error('Search error:', err);
+        res.status(500).json({ error: 'Search failed' });
     }
 });
 app.post('/create-order', async (req, res) => {
@@ -1218,7 +1291,7 @@ app.post('/verify-payment', async (req, res) => {
         }
 
         // Check if user already has an active subscription
-        const activeSubscriptionResult = await db.query(
+        const activeSubscriptionResult = await query(
             `SELECT * FROM premium_users 
             WHERE user_id = $1 
             AND subscription_end_date > CURRENT_TIMESTAMP 
@@ -1299,7 +1372,7 @@ app.post('/verify-payment', async (req, res) => {
 
             try {
                 // Begin transaction
-                await db.query('BEGIN');
+                await query('BEGIN');
 
                 console.log('Starting database transaction for premium update:', {
                     userId,
@@ -1309,7 +1382,7 @@ app.post('/verify-payment', async (req, res) => {
                 });
 
                 // Insert into premium_users table
-                const insertResult = await db.query(
+                const insertResult = await query(
                     `INSERT INTO premium_users 
                     (user_id, plan_type, subscription_end_date, amount_paid) 
                     VALUES ($1, $2, $3, $4) 
@@ -1320,7 +1393,7 @@ app.post('/verify-payment', async (req, res) => {
                 console.log('Inserted into premium_users:', insertResult.rows[0]);
 
                 // Update user's premium status
-                const updateResult = await db.query(
+                const updateResult = await query(
                     'UPDATE users SET is_premium = true WHERE id = $1 RETURNING id, username, is_premium',
                     [userId]
                 );
@@ -1328,7 +1401,7 @@ app.post('/verify-payment', async (req, res) => {
                 console.log('Updated user premium status:', updateResult.rows[0]);
 
                 // Commit transaction
-                await db.query('COMMIT');
+                await query('COMMIT');
 
                 console.log('Successfully completed premium update transaction');
                 res.json({ 
@@ -1343,7 +1416,7 @@ app.post('/verify-payment', async (req, res) => {
                 isPremium = true;
             } catch (dbError) {
                 // Rollback transaction on error
-                await db.query('ROLLBACK');
+                await query('ROLLBACK');
                 console.error('Database error during premium update:', dbError);
                 res.status(500).json({ 
                     success: false, 
@@ -1380,7 +1453,7 @@ app.get("/premium", async (req, res) => {
 
     try {
         // Get user details including premium status
-        const userResult = await db.query(
+        const userResult = await query(
             "SELECT * FROM users WHERE username = $1",
             [req.session.username]
         );
@@ -1392,7 +1465,7 @@ app.get("/premium", async (req, res) => {
         const user = userResult.rows[0];
 
         // Check for active subscription and update premium status
-        const subscriptionResult = await db.query(
+        const subscriptionResult = await query(
             `SELECT plan_type, subscription_end_date 
             FROM premium_users 
             WHERE user_id = $1 
@@ -1405,7 +1478,7 @@ app.get("/premium", async (req, res) => {
         // Update user's premium status based on subscription
         const hasActiveSubscription = subscriptionResult.rows.length > 0;
         if (user.is_premium !== hasActiveSubscription) {
-            await db.query(
+            await query(
                 'UPDATE users SET is_premium = $1 WHERE id = $2',
                 [hasActiveSubscription, user.id]
             );
@@ -1457,7 +1530,7 @@ app.get("/profile", async (req, res) => {
 
     try {
         // Get user details
-        const userResult = await db.query(
+        const userResult = await query(
             "SELECT * FROM users WHERE username = $1",
             [req.session.username]
         );
@@ -1469,7 +1542,7 @@ app.get("/profile", async (req, res) => {
         const user = userResult.rows[0];
 
         // Get subscription details
-        const subscriptionResult = await db.query(
+        const subscriptionResult = await query(
             `SELECT plan_type, subscription_end_date 
             FROM premium_users 
             WHERE user_id = $1 
@@ -1480,14 +1553,14 @@ app.get("/profile", async (req, res) => {
         );
 
         // Get liked songs count
-        const likedSongsResult = await db.query(
+        const likedSongsResult = await query(
             "SELECT COUNT(*) FROM liked WHERE userid = $1",
             [req.session.userId]
         );
         const likedSongsCount = likedSongsResult.rows[0].count;
 
         // Get playlists count - Fixed column name from userid to user_id
-        const playlistsResult = await db.query(
+        const playlistsResult = await query(
             "SELECT COUNT(*) FROM playlists WHERE user_id = $1",
             [req.session.userId]
         );
@@ -1523,7 +1596,7 @@ app.post("/update-username", async (req, res) => {
     
     try {
         // Check if username is already taken
-        const existingUser = await db.query(
+        const existingUser = await query(
             "SELECT * FROM users WHERE username = $1 AND username != $2",
             [newUsername, req.session.username]
         );
@@ -1533,7 +1606,7 @@ app.post("/update-username", async (req, res) => {
         }
 
         // Update username
-        await db.query(
+        await query(
             "UPDATE users SET username = $1 WHERE username = $2",
             [newUsername, req.session.username]
         );
@@ -1557,7 +1630,7 @@ app.post("/update-profile", async (req, res) => {
         const { username, email } = req.body;
 
         // Check if username or email is already taken by another user
-        const existingUser = await db.query(
+        const existingUser = await query(
             "SELECT * FROM users WHERE (username = $1 OR email = $2) AND id != $3",
             [username, email, req.session.userId]
         );
@@ -1571,7 +1644,7 @@ app.post("/update-profile", async (req, res) => {
         }
 
         // Update user profile
-        await db.query(
+        await query(
             "UPDATE users SET username = $1, email = $2 WHERE id = $3",
             [username, email, req.session.userId]
         );
@@ -1595,7 +1668,7 @@ app.post("/change-password", async (req, res) => {
         const { currentPassword, newPassword, confirmPassword } = req.body;
 
         // Verify current password
-        const user = await db.query("SELECT * FROM users WHERE id = $1", [req.session.userId]);
+        const user = await query("SELECT * FROM users WHERE id = $1", [req.session.userId]);
         if (user.rows.length === 0) {
             return res.redirect("/login");
         }
@@ -1620,7 +1693,7 @@ app.post("/change-password", async (req, res) => {
 
         // Hash and update new password
         const hashedPassword = await bcrypt.hash(newPassword, saltrounds);
-        await db.query(
+        await query(
             "UPDATE users SET password = $1 WHERE id = $2",
             [hashedPassword, req.session.userId]
         );
@@ -1662,14 +1735,14 @@ app.get("/add-to-playlist/:title", async (req, res) => {
         }
         
         // Get the song ID
-        const songResult = await db.query("SELECT id FROM songs WHERE title = $1", [title]);
+        const songResult = await query("SELECT id FROM songs WHERE title = $1", [title]);
         if (songResult.rows.length === 0) {
             return res.status(404).json({ success: false, error: "Song not found" });
         }
         const songId = songResult.rows[0].id;
         
         // Get the playlist ID
-        const playlistResult = await db.query(
+        const playlistResult = await query(
             "SELECT id FROM playlists WHERE playlist_name = $1 AND user_id = $2", 
             [playlistName, userId]
         );
@@ -1679,7 +1752,7 @@ app.get("/add-to-playlist/:title", async (req, res) => {
         const playlistId = playlistResult.rows[0].id;
         
         // Check if the song is already in the playlist
-        const existingSong = await db.query(
+        const existingSong = await query(
             "SELECT * FROM playlists WHERE id = $1 AND song_id = $2",
             [playlistId, songId]
         );
@@ -1689,7 +1762,7 @@ app.get("/add-to-playlist/:title", async (req, res) => {
         }
         
         // Add the song to the playlist
-        await db.query(
+        await query(
             "INSERT INTO playlists (playlist_name, user_id, song_id) VALUES ($1, $2, $3)",
             [playlistName, userId, songId]
         );
@@ -1714,7 +1787,7 @@ app.get("/get-song-id", async (req, res) => {
         }
         
         const lowercaseTitle = title.toLowerCase();
-        const result = await db.query("SELECT id FROM songs WHERE title = $1", [lowercaseTitle]);
+        const result = await query("SELECT id FROM songs WHERE title = $1", [lowercaseTitle]);
         
         if (result.rows.length === 0) {
             return res.status(404).json({ success: false, error: "Song not found" });
@@ -1741,7 +1814,7 @@ app.post("/add-to-playlist", async (req, res) => {
         }
         
         // Verify the playlist belongs to the user
-        const playlistCheck = await db.query(
+        const playlistCheck = await query(
             "SELECT * FROM playlists WHERE id = $1 AND user_id = $2",
             [playlistId, req.session.userId]
         );
@@ -1751,7 +1824,7 @@ app.post("/add-to-playlist", async (req, res) => {
         }
         
         // Check if the song is already in the playlist
-        const existingSong = await db.query(
+        const existingSong = await query(
             "SELECT * FROM playlists WHERE id = $1 AND song_id = $2",
             [playlistId, songId]
         );
@@ -1761,7 +1834,7 @@ app.post("/add-to-playlist", async (req, res) => {
         }
         
         // Add the song to the playlist
-        await db.query(
+        await query(
             "INSERT INTO playlists (playlist_name, user_id, song_id) VALUES ($1, $2, $3)",
             [playlistName, req.session.userId, songId]
         );
@@ -1786,7 +1859,7 @@ app.get("/playlist-rand", async (req, res) => {
         }
 
         // Get a random song from the specified playlist
-        const result = await db.query(`
+        const result = await query(`
             SELECT s.title, s.artist, s.cover, s.song 
             FROM playlists p 
             JOIN songs s ON p.song_id = s.id 
@@ -1840,7 +1913,7 @@ app.get("/mood-rand", async (req, res) => {
         }
 
         // Get a random song from the specified mood
-        const result = await db.query(`
+        const result = await query(`
             SELECT title, artist, cover, song 
             FROM songs 
             WHERE mood = $1 
@@ -1884,7 +1957,7 @@ app.post("/mark-feedback-read", isAdmin, async (req, res) => {
     try {
         const { feedbackId } = req.body;
         
-        await db.query("UPDATE feedback SET is_read = true WHERE id = $1", [feedbackId]);
+        await query("UPDATE feedback SET is_read = true WHERE id = $1", [feedbackId]);
         
         res.json({ success: true });
     } catch (error) {
@@ -1916,7 +1989,7 @@ app.post("/submit-feedback", async (req, res) => {
     try {
         const { username, name, email, subject, message } = req.body;
         
-        await db.query(
+        await query(
             "INSERT INTO feedback (username, name, email, subject, message) VALUES ($1, $2, $3, $4, $5)",
             [username, name, email, subject, message]
         );
@@ -1931,8 +2004,9 @@ app.post("/submit-feedback", async (req, res) => {
 // Error handler middleware
 app.use((err, req, res, next) => {
     console.error('Error:', err);
-    res.status(err.status || 500).render('error', {
-        error: err.message || 'An unexpected error occurred'
+    res.status(500).json({ 
+        error: 'Internal Server Error',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Something went wrong'
     });
 });
 
@@ -1943,6 +2017,14 @@ app.use((req, res) => {
     });
 });
 
-app.listen(port, () => {
-    console.log(`Server running on http://localhost:${port}`);
+// Test route
+app.get("/test", (req, res) => {
+    res.send("Server is working!");
 });
+
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
+
+// Export the Express API
+export default app;
